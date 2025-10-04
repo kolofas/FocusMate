@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+sqlalchemy
+asyncpg
+alembic
+aiogram
+redis
+rq
+apscheduler
+orjson
+python-dotenv
+tenacity
