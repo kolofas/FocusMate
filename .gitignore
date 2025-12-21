@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+
+# Pytest / tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Env files / secrets
+.env
+.env.*
+focus/.env
+
+# Databases / local artifacts
+*.db
+focus.db
+focus/focus.db
+
+# Archives
+*.zip
