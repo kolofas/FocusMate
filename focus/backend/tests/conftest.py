@@ -1,39 +1,45 @@
-# tests/conftest.py
+# focus/backend/tests/conftest.py
 from __future__ import annotations
 
+import os
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 from focus.backend.app import app
 from focus.backend.database.models import Base
-from focus.backend.database.core import get_db  # твой Depends-провайдер
+from focus.backend.database.core import get_db
+from focus.backend.settings import settings
 
+
+TEST_SCHEMA = "test_schema"
 
 @pytest.fixture(scope="session")
 def engine():
-    # один общий in-memory для всех соединений
-    eng = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        future=True,
-    )
-    # создаём таблицы на этом же engine
-    Base.metadata.drop_all(bind=eng)
-    Base.metadata.create_all(bind=eng)
-    try:
-        yield eng
-    finally:
-        eng.dispose()
+    url = settings.database_url
+    eng = create_engine(url, future=True)
+
+    # все DDL — на одном соединении с выставленным search_path
+    with eng.begin() as conn:
+        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{TEST_SCHEMA}"'))
+        conn.execute(text(f'SET search_path TO "{TEST_SCHEMA}"'))
+        Base.metadata.drop_all(bind=conn)
+        Base.metadata.create_all(bind=conn)
+
+    yield eng
+
+    # чистим схему после сессии
+    with eng.begin() as conn:
+        conn.execute(text('SET search_path TO public'))
+        conn.execute(text(f'DROP SCHEMA IF EXISTS "{TEST_SCHEMA}" CASCADE'))
 
 
 @pytest.fixture
 def db_session(engine):
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
     sess = SessionLocal()
+    sess.execute(text(f'SET search_path TO "{TEST_SCHEMA}"'))
     try:
         yield sess
     finally:
@@ -43,7 +49,6 @@ def db_session(engine):
 
 @pytest.fixture
 def client(db_session):
-    # подменяем зависимость get_db, чтобы app использовало нашу сессию
     def _override_get_db():
         try:
             yield db_session

@@ -6,13 +6,13 @@ from sqlalchemy.dialects.postgresql import JSONB
 Base = declarative_base()
 
 def JSONType():
-    # JSONB в PG, JSON в SQLite
-    return JSONB().with_variant(SQLITE_JSON, "sqlite")
+    return JSONB
 
 class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True)  # index=True не нужен
+    user_id = Column(Integer, ForeignKey("telegram_users.id", ondelete="SET NULL"), nullable=True)
     title = Column(String(300), nullable=False)
     description = Column(Text, nullable=True)
     source = Column(String(30), nullable=False, default="manual")  # manual|telegram|email
@@ -33,6 +33,7 @@ class InboxEvent(Base):
     id = Column(Integer, primary_key=True)
     source = Column(String(20), nullable=False, default="telegram")
     dedup = Column(String(64), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("telegram_users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (UniqueConstraint("source", "dedup", name="ux_source_dedup"),)
@@ -50,8 +51,8 @@ class FocusList(Base):
     items = relationship("FocusItem", back_populates="focus_list", cascade="all, delete-orphan")
 
     __table_args__ = (
-        UniqueConstraint("date", "user_id", name="ux_focus_lists_date_user"),  # <-- исправлено
-        Index("ix_focus_lists_date", "date"),                                  # <-- исправлено
+        UniqueConstraint("date", "user_id", name="ux_focus_lists_date_user"),
+        Index("ix_focus_lists_date", "date"),
     )
 
 class FocusItem(Base):
@@ -72,3 +73,14 @@ class FocusItem(Base):
         UniqueConstraint("focus_list_id", "task_id", name="ux_focus_items_unique_task_per_list"),
         Index("ix_focus_items_rank", "focus_list_id", "rank"),
     )
+
+
+class TelegramUser(Base):
+    __tablename__ = "telegram_users"
+
+    id = Column(Integer, primary_key=True)
+    chat_id = Column(String(50), nullable=False, unique=True, index=True)
+    username = Column(String(100), nullable=True)
+    first_name = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+

@@ -12,7 +12,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 from focus.backend.settings import settings
-from focus.backend.database.models import Base
+import focus.backend.database.models as models
 
 config = context.config
 # берём URL из настроек приложения
@@ -21,7 +21,7 @@ config.set_main_option("sqlalchemy.url", settings.database_url)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = models.Base.metadata
 
 
 def run_migrations_offline():
@@ -31,6 +31,7 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,
+        include_schemas=True,
         compare_server_default=True,
     )
     with context.begin_transaction():
@@ -49,6 +50,7 @@ def run_migrations_online():
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
+            include_schemas=True,
             compare_server_default=True,
         )
         with context.begin_transaction():

@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from typing import Optional
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from ..settings import settings
+
 from ..database import models
-from focus.backend.database.enums import TaskStatus
+from ..database.enums import TaskStatus
+from ..settings import settings
 
 __all__ = ["score_task", "plan_today"]
 
@@ -66,52 +69,42 @@ def _deadline_score(deadline: datetime | None) -> int:
     return 0
 
 
-def _get_or_create_focus_list(db: Session, target_date: date) -> models.FocusList:
-    stmt = select(models.FocusList).where(models.FocusList.date == target_date).limit(1)
+def _get_or_create_focus_list(
+        db: Session,
+        target_date: date,
+        *,
+        user_id: Optional[int],
+) -> models.FocusList:
+    stmt = (
+        select(models.FocusList)
+        .where(
+            models.FocusList.date == target_date,
+            models.FocusList.user_id.is_(user_id) if user_id is None else models.FocusList.user_id == user_id,
+        )
+        .limit(1)
+    )
     obj = db.execute(stmt).scalars().first()
-    if obj is None:
-        obj = models.FocusList(date=target_date)
-        db.add(obj)
-        db.flush()
+    if obj:
+        return obj
+
+    obj = models.FocusList(date=target_date, user_id=user_id)
+    db.add(obj)
+    db.flush()
     return obj
 
 
-def plan_today(
-    db: Session,
-    *,
-    limit: int | None = None,
-    for_date: date | None = None
-) -> models.FocusList:
+def _select_candidates(db: Session, *, user_id: Optional[int]) -> list[models.Task]:
     """
-    Строит/обновляет FocusList на указанную дату:
-      - берёт кандидатов со статусами inbox|planned,
-      - считает score,
-      - берёт топ-N,
-      - пересобирает FocusItems с rank/score.
-    Коммит — на вызывающем коде.
+    Берём только задачи этого пользователя.
+    Для системных/ручных без пользователя — user_id IS NULL.
     """
-    target_date = for_date or date.today()
-    limit = limit or settings.focus_limit
-
-    focus_list = _get_or_create_focus_list(db, target_date)
-
-    candidates = _select_candidates(db)
-    ranked = sorted(candidates, key=_rank_key, reverse=True)[:limit]
-
-    focus_list.items.clear()
-    for idx, task in enumerate(ranked, start=1):
-        focus_list.items.append(
-            models.FocusItem(task=task, rank=idx, score=score_task(task))
-        )
-
-    db.flush()
-    return focus_list
-
-
-def _select_candidates(db: Session) -> list[models.Task]:
     stmt = select(models.Task).where(
         models.Task.status.in_([TaskStatus.INBOX.value, TaskStatus.PLANNED.value])
     )
+    if user_id is None:
+        stmt = stmt.where(models.Task.user_id.is_(None))
+    else:
+        stmt = stmt.where(models.Task.user_id == user_id)
     return db.execute(stmt).scalars().all()
 
 
@@ -124,3 +117,30 @@ def _rank_key(task: models.Task):
     dl = task.deadline or datetime.max.replace(tzinfo=timezone.utc)
     ca = task.created_at or datetime.max.replace(tzinfo=timezone.utc)
     return (s, -dl.timestamp(), -ca.timestamp())
+
+
+def plan_today(
+    db: Session,
+    *,
+    user_id: Optional[int],
+    limit: Optional[int] = None,
+    for_date: Optional[date] = None,
+) -> models.FocusList:
+    """
+    Строит/обновляет фокус-лист НА ПОЛЬЗОВАТЕЛЯ.
+    """
+    target_date = for_date or date.today()
+    limit = limit or settings.focus_limit
+
+    focus_list = _get_or_create_focus_list(db, target_date, user_id=user_id)
+    candidates = _select_candidates(db, user_id=user_id)
+    ranked = sorted(candidates, key=_rank_key, reverse=True)[:limit]
+
+    focus_list.items.clear()
+    for idx, task in enumerate(ranked, start=1):
+        focus_list.items.append(
+            models.FocusItem(task=task, rank=idx, score=score_task(task))
+        )
+
+    db.flush()
+    return focus_list

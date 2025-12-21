@@ -42,6 +42,7 @@ def is_duplicate_inbox(db: Session,
     )
     return db.execute(stmt).first() is not None
 
+
 def save_inbox_event(db: Session, source: str, dedup_key: str) -> models.InboxEvent:
     """
     Сохраняет событие инбокса. Коммит не выполняется - чтобы участвовать в общей транзакции

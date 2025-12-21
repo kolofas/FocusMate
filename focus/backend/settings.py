@@ -1,7 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
+# ищем .env, поднимаясь от файла вверх
+ENV_PATH = next(p for p in Path(__file__).resolve().parents if (p / ".env").exists())
 
 class Settings(BaseSettings):
-    database_url: str = "sqlite:///./focus.db"
+    database_url: str
 
     inbox_dedup_minutes: int = 10
 
@@ -11,7 +15,16 @@ class Settings(BaseSettings):
     urgent_tag: str = "urgent"
     focus_limit: int = 5
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    log_level: str = "INFO" # DEBUG/INFO/WARN/ERROR
+    sql_echo: bool = False # Печать SQL запросов
+
+    # telegram
+    telegram_bot_token: str | None = None
+    telegram_webhook_secret: str | None = None # для пути /telegram/webhook/{secret}
+    telegram_mode: str = "webhook" # "webhook" | "polling"
+    telegram_log_updates: bool = True
+
+    model_config = SettingsConfigDict(env_file=str(ENV_PATH / ".env"), extra="ignore")
 
 
 settings = Settings()

@@ -44,3 +44,17 @@ def create_task_from_parsed(db: Session,
 
     db.add(task)
     return task
+
+
+def change_task_status(task: models.Task, new_status: TaskStatus) -> None:
+    """
+    Единое место смены статуса задачи.
+    Сейчас просто присваивает строковое значение, но сюда можно будет
+    добавить правила переходов (например, что из done нельзя в inbox).
+    """
+    value = new_status.value
+    if task.status == value:
+        return
+
+    task.status = value
+

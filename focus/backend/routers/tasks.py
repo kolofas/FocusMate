@@ -11,6 +11,7 @@ from ..schemas import TaskRead, TaskCreate, TaskUpdate, StatusChange
 from focus.backend.database.enums import TaskStatus
 from ..utils.tags import canonicalize_tags
 from ..settings import settings
+from ..services.tasks import change_task_status
 
 router = APIRouter()
 
@@ -45,10 +46,20 @@ def list_tasks(
     offset: int = Query(0, ge=0),
     status: Optional[str] = Query(None, description="inbox|planned|done|snoozed"),
     q: Optional[str] = Query(None, description="substring match in title (case-insensitive)"),
+    tag: Optional[str] = Query(None, description="filter by #tag without #"),
     order_by: str = Query("created_at"),
     direction: str = Query("desc", alias="dir"),
+    user_id: int | None = Query(None, description="filter by user"),
 ):
     stmt = select(models.Task)
+    if user_id is None:
+        stmt = stmt.where(models.Task.user_id.is_(None))
+    else:
+        stmt = stmt.where(models.Task.user_id == user_id)
+
+    if tag:
+        stmt = stmt.where(models.Task.tags.contains([tag.lower()]))
+
     stmt = apply_filters(stmt, status, q)
     stmt = apply_ordering(stmt, order_by, direction)
     stmt = stmt.limit(limit).offset(offset)
@@ -134,7 +145,7 @@ def change_status(task_id: int, payload: StatusChange, db: Session = Depends(get
         raise HTTPException(404, detail="Task not found")
 
     # простые guards можно добавить позже
-    obj.status = payload.status.value  # явное строковое значение
+    change_task_status(obj, payload.status)
 
     try:
         db.commit()
