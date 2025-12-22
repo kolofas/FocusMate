@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -29,7 +28,9 @@ def get_plan_today(
         select(models.FocusList)
         .where(
             models.FocusList.date == today,
-            models.FocusList.user_id.is_(user_id) if user_id is None else models.FocusList.user_id == user_id,
+            models.FocusList.user_id.is_(user_id)
+            if user_id is None
+            else models.FocusList.user_id == user_id,
         )
         .limit(1)
     )

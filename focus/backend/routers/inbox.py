@@ -6,12 +6,19 @@ from zoneinfo import ZoneInfo
 from focus.backend.database.core import get_db
 from ..schemas import InboxTelegram, TaskRead
 from focus.backend.database.enums import TaskSource, TaskStatus
-from ..services import InboxParser, create_task_from_parsed, make_dedup, is_duplicate_inbox, save_inbox_event
+from ..services import (
+    InboxParser,
+    create_task_from_parsed,
+    make_dedup,
+    is_duplicate_inbox,
+    save_inbox_event,
+)
 
 router = APIRouter()
 
 # создаём один инстанс парсера (можно держать на уровне модуля)
 _parser = InboxParser(tz=ZoneInfo("Europe/Amsterdam"))
+
 
 @router.post("/telegram", response_model=TaskRead, status_code=201)
 def accept_from_telegram(payload: InboxTelegram, db: Session = Depends(get_db)):
@@ -51,5 +58,3 @@ def accept_from_telegram(payload: InboxTelegram, db: Session = Depends(get_db)):
     except Exception:
         db.rollback()
         raise
-
-

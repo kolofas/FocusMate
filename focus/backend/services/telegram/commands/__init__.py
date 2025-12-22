@@ -1,0 +1,16 @@
+from ..types import CommandHandler
+from .help import command_help
+from .today import command_today
+from .tasks import command_tasks
+from .done import command_done
+from .status import command_status
+
+COMMAND_HANDLERS: dict[str, CommandHandler] = {
+    "/today": command_today,
+    "/focus": command_today,
+    "/tasks": command_tasks,
+    "/help": command_help,
+    "/start": command_help,
+    "/done": command_done,
+    "/status": command_status,
+}

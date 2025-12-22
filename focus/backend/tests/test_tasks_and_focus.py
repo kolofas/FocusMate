@@ -1,10 +1,17 @@
 # tests/test_tasks_and_focus.py
 from datetime import datetime, timezone, timedelta
 
+
 def test_tasks_crud_and_focus_today(client):
     # create a couple of tasks
     t1 = {"title": "Task A", "description": "A", "source": "manual", "tags": ["urgent"]}
-    t2 = {"title": "Task B", "description": "B", "source": "manual", "deadline": (datetime.now(timezone.utc)+timedelta(hours=6)).isoformat(), "tags": []}
+    t2 = {
+        "title": "Task B",
+        "description": "B",
+        "source": "manual",
+        "deadline": (datetime.now(timezone.utc) + timedelta(hours=6)).isoformat(),
+        "tags": [],
+    }
 
     r1 = client.post("/tasks/", json=t1)
     r2 = client.post("/tasks/", json=t2)

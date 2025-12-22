@@ -12,8 +12,10 @@ router = APIRouter()
 
 
 @router.get("/today", response_model=PlanTodayResponse)
-def read_today_plan(db: Session = Depends(get_db),
-                    user_id: int | None = Query(None, description="optional user id")) -> PlanTodayResponse:
+def read_today_plan(
+    db: Session = Depends(get_db),
+    user_id: int | None = Query(None, description="optional user id"),
+) -> PlanTodayResponse:
     """
     Возвращает FocusList на сегодня.
     Если отсутствует — строит его (планировщик v0).

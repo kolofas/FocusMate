@@ -1,6 +1,7 @@
 # tests/test_parsing.py
 from focus.backend.services.parsing import InboxParser
 
+
 def test_parser_extracts_title_tags_and_deadline_date_only():
     p = InboxParser(title_limit=300)
     text = "Сделать отчёт #Work 2025-12-01"
@@ -9,6 +10,7 @@ def test_parser_extracts_title_tags_and_deadline_date_only():
     assert "Work" in parsed.tags
     assert parsed.deadline_local is not None
     assert parsed.deadline_local.hour == 23 and parsed.deadline_local.minute == 59
+
 
 def test_parser_extracts_datetime_with_time():
     p = InboxParser()

@@ -10,12 +10,19 @@ from ..database import models
 
 def _find_telegram_user(db: Session, chat_id: int) -> Optional[models.TelegramUser]:
     stmt = (
-        select(models.TelegramUser).where(models.TelegramUser.chat_id == str(chat_id)).limit(1)
+        select(models.TelegramUser)
+        .where(models.TelegramUser.chat_id == str(chat_id))
+        .limit(1)
     )
     return db.execute(stmt).scalars().first()
 
 
-def _apply_profile_updates(user: models.TelegramUser, *, username: Optional[str], first_name: Optional[str],) -> bool:
+def _apply_profile_updates(
+    user: models.TelegramUser,
+    *,
+    username: Optional[str],
+    first_name: Optional[str],
+) -> bool:
     """
     Применяет обновления к профилю.
     Возвращает True, если были изменения
@@ -34,10 +41,10 @@ def _apply_profile_updates(user: models.TelegramUser, *, username: Optional[str]
 
 
 def get_or_create_telegram_user(
-        db: Session,
-        chat_id: int,
-        username: Optional[str],
-        first_name: Optional[str],
+    db: Session,
+    chat_id: int,
+    username: Optional[str],
+    first_name: Optional[str],
 ) -> models.TelegramUser:
     """
     Получить пользователя по chat_id.
@@ -58,7 +65,3 @@ def get_or_create_telegram_user(
     db.add(user)
     db.flush()
     return user
-
-
-
-

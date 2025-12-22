@@ -12,13 +12,14 @@ from focus.backend.utils.tags import canonicalize_tags
 MAX_DESC_LEN = settings.max_description_length  # единая константа
 
 
-def create_task_from_parsed(db: Session,
-                            parsed: ParsedInbox,
-                            *,
-                            source: TaskSource,
-                            status: TaskStatus = TaskStatus.INBOX,
-                            raw_text: Optional[str] = None,
-                            ) -> models.Task:
+def create_task_from_parsed(
+    db: Session,
+    parsed: ParsedInbox,
+    *,
+    source: TaskSource,
+    status: TaskStatus = TaskStatus.INBOX,
+    raw_text: Optional[str] = None,
+) -> models.Task:
     """
     Создаёт Task из ParsedInbox. Источник и статус приходят снаружи.
     Нормализует title/tags и переводит дедлайн в UTC.
@@ -29,7 +30,11 @@ def create_task_from_parsed(db: Session,
 
     description = (raw_text or parsed.raw or "")[:MAX_DESC_LEN]
 
-    deadline_utc = to_utc(parsed.deadline_local) if getattr(parsed, "deadline_local", None) else None
+    deadline_utc = (
+        to_utc(parsed.deadline_local)
+        if getattr(parsed, "deadline_local", None)
+        else None
+    )
 
     tags = canonicalize_tags(parsed.tags or [])
 
@@ -57,4 +62,3 @@ def change_task_status(task: models.Task, new_status: TaskStatus) -> None:
         return
 
     task.status = value
-

@@ -1,7 +1,6 @@
 # focus/backend/tests/conftest.py
 from __future__ import annotations
 
-import os
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
@@ -14,6 +13,7 @@ from focus.backend.settings import settings
 
 
 TEST_SCHEMA = "test_schema"
+
 
 @pytest.fixture(scope="session")
 def engine():
@@ -31,13 +31,15 @@ def engine():
 
     # чистим схему после сессии
     with eng.begin() as conn:
-        conn.execute(text('SET search_path TO public'))
+        conn.execute(text("SET search_path TO public"))
         conn.execute(text(f'DROP SCHEMA IF EXISTS "{TEST_SCHEMA}" CASCADE'))
 
 
 @pytest.fixture
 def db_session(engine):
-    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    SessionLocal = sessionmaker(
+        bind=engine, autoflush=False, autocommit=False, future=True
+    )
     sess = SessionLocal()
     sess.execute(text(f'SET search_path TO "{TEST_SCHEMA}"'))
     try:

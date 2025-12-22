@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from ..settings import  settings
+from ..settings import settings
 
 engine = create_engine(
     settings.database_url,
@@ -8,6 +8,7 @@ engine = create_engine(
     echo=settings.sql_echo,
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
 
 def get_db():
     db = SessionLocal()

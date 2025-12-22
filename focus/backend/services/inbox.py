@@ -22,10 +22,12 @@ def make_dedup(text: str) -> str:
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:32]
 
 
-def is_duplicate_inbox(db: Session,
-                       source: str,
-                       dedup_key: str,
-                       window_minutes: int = settings.inbox_dedup_minutes) -> bool:
+def is_duplicate_inbox(
+    db: Session,
+    source: str,
+    dedup_key: str,
+    window_minutes: int = settings.inbox_dedup_minutes,
+) -> bool:
     """
     Проверяет наличие события инбокса с тем же (source, dedup) за последнее окно времени.
     Коммит не выполняется — ответственность вызывающего.

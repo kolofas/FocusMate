@@ -4,8 +4,10 @@ from datetime import datetime, date
 
 from focus.backend.database.enums import TaskStatus
 
+
 class AppBaseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
 
 class TaskCreate(AppBaseModel):
     title: str
@@ -14,11 +16,13 @@ class TaskCreate(AppBaseModel):
     deadline: Optional[datetime] = None
     tags: List[str] = []
 
+
 class TaskUpdate(AppBaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     deadline: Optional[datetime] = None
     tags: Optional[List[str]] = None
+
 
 class TaskRead(AppBaseModel):
     id: int
@@ -31,19 +35,22 @@ class TaskRead(AppBaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class InboxTelegram(AppBaseModel):
     text: str
     chat_id: Optional[str] = None
 
+
 class StatusChange(AppBaseModel):
     status: TaskStatus
+
 
 class PlanTodayResponseItem(AppBaseModel):
     rank: int
     score: int
     task: TaskRead
 
+
 class PlanTodayResponse(AppBaseModel):
     date: date
     items: List[PlanTodayResponseItem]
-

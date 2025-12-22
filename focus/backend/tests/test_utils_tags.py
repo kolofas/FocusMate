@@ -1,5 +1,6 @@
 from focus.backend.utils.tags import canonicalize_tags
 
+
 def test_canonicalize_tags():
     assert canonicalize_tags(["#Work", " urgent ", "#Work", ""]) == ["urgent", "work"]
 

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, time
-from typing import Callable, List, Optional, Tuple, Sequence
+from datetime import datetime
+from typing import Optional
 from zoneinfo import ZoneInfo
 from ..settings import settings
 
@@ -18,6 +18,7 @@ class ParsedInbox:
     - tags: список найденных тегов без '#', в исходном регистре (нормализацию делаем на уровне сервисов)
     - deadline_local: локальный дедлайн (tz-aware, Europe/Amsterdam) или None
     """
+
     raw: str
     title: str
     tags: list[str]
@@ -30,7 +31,9 @@ class InboxParser:
     Выделяет #tags, ISO-дедлайн и формирует заголовок без тегов.
     """
 
-    ISO_DT = re.compile(r"\b(?P<date>\d{4}-\d{2}-\d{2})(?:[ T](?P<time>\d{2}:\d{2}))?\b")
+    ISO_DT = re.compile(
+        r"\b(?P<date>\d{4}-\d{2}-\d{2})(?:[ T](?P<time>\d{2}:\d{2}))?\b"
+    )
     TAGS = re.compile(r"#(?P<tag>[A-Za-z0-9_]+)")
 
     def __init__(self, tz: ZoneInfo | None = None, title_limit: int = 300) -> None:

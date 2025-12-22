@@ -6,8 +6,6 @@ from .routers.tasks import router as tasks_router
 from .routers.inbox import router as inbox_router
 from .routers.focus import router as focus_router
 from .routers.telegram import router as telegram_router
-from focus.backend.database.models import Base
-from focus.backend.database.core import engine
 
 
 logging.basicConfig(

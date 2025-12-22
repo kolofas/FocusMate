@@ -45,7 +45,9 @@ def list_tasks(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     status: Optional[str] = Query(None, description="inbox|planned|done|snoozed"),
-    q: Optional[str] = Query(None, description="substring match in title (case-insensitive)"),
+    q: Optional[str] = Query(
+        None, description="substring match in title (case-insensitive)"
+    ),
     tag: Optional[str] = Query(None, description="filter by #tag without #"),
     order_by: str = Query("created_at"),
     direction: str = Query("desc", alias="dir"),

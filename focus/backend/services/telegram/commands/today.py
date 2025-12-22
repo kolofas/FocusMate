@@ -1,0 +1,59 @@
+from typing import Sequence
+
+from focus.backend.database.enums import TaskStatus
+from focus.backend.services import get_plan_today
+from focus.backend.services.telegram.api import send_reply
+from focus.backend.services.telegram.consts import STATUS_EMOJI
+from focus.backend.services.telegram.parsers import parse_today_filters
+from focus.backend.services.telegram.types import TelegramContext
+
+
+async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
+    """
+    /today [status] [all] — фокус-лист на сегодня для пользователя.
+    Примеры:
+      /today
+      /today planned
+      /today planned all
+      /today all
+    """
+    db = ctx.db
+    telegram_user = ctx.telegram_user
+    chat_id = ctx.chat_id
+
+    status_filter, include_done = parse_today_filters(args)
+
+    plan = get_plan_today(db, user_id=telegram_user.id, ensure_build=True)
+    items = list(plan.items)
+
+    if status_filter:
+        items = [it for it in items if it.task.status == status_filter]
+
+    if not include_done:
+        items = [it for it in items if it.task.status != TaskStatus.DONE.value]
+
+    if not items:
+        if status_filter:
+            await send_reply(
+                chat_id,
+                f"В фокусе на сегодня нет задач со статусом {status_filter}"
+                + ("" if not include_done else " (включая done)."),
+            )
+        else:
+            await send_reply(chat_id, "На сегодня задач нет 👍")
+        return
+
+    header = f"Фокус на {plan.date}"
+    suffix_parts: list[str] = []
+    if status_filter:
+        suffix_parts.append(status_filter)
+    if include_done:
+        suffix_parts.append("all")
+    if suffix_parts:
+        header += " (" + ", ".join(suffix_parts) + ")"
+
+    lines = [header]
+    for item in items:
+        emoji = STATUS_EMOJI.get(item.task.status, "•")
+        lines.append(f"{item.rank}. {emoji} {item.task.title} ({item.score}🔸)")
+    await send_reply(chat_id, "\n".join(lines))

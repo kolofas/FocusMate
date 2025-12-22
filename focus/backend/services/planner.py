@@ -70,16 +70,18 @@ def _deadline_score(deadline: datetime | None) -> int:
 
 
 def _get_or_create_focus_list(
-        db: Session,
-        target_date: date,
-        *,
-        user_id: Optional[int],
+    db: Session,
+    target_date: date,
+    *,
+    user_id: Optional[int],
 ) -> models.FocusList:
     stmt = (
         select(models.FocusList)
         .where(
             models.FocusList.date == target_date,
-            models.FocusList.user_id.is_(user_id) if user_id is None else models.FocusList.user_id == user_id,
+            models.FocusList.user_id.is_(user_id)
+            if user_id is None
+            else models.FocusList.user_id == user_id,
         )
         .limit(1)
     )

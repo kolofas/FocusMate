@@ -11,8 +11,10 @@ from ..database.core import get_db
 from ..settings import settings
 from ..services import telegram_bot
 from ..services.telegram_users import get_or_create_telegram_user
+
 router = APIRouter()
 log = logging.getLogger("telegram")
+
 
 def _require_webhook_secret(provided: str) -> None:
     """
@@ -32,13 +34,17 @@ def _get_bot_token_or_500() -> str:
     """
     token = settings.telegram_bot_token
     if not token:
-        raise HTTPException(status_code=500, detail="TELEGRAM_BOT_TOKEN is not configured")
+        raise HTTPException(
+            status_code=500, detail="TELEGRAM_BOT_TOKEN is not configured"
+        )
 
     return token
 
 
 @router.post("/webhook/{secret}")
-async def telegram_webhook(secret: str, request: Request, db: Session = Depends(get_db)):
+async def telegram_webhook(
+    secret: str, request: Request, db: Session = Depends(get_db)
+):
     """
     Точка входа для Telegram webhook.
     Делает только:
@@ -101,9 +107,13 @@ async def set_webhook(base_url: str):
     """
     token = _get_bot_token_or_500()
     if not settings.telegram_webhook_secret:
-        raise HTTPException(status_code=400, detail="TELEGRAM_WEBHOOK_SECRET is not configured")
+        raise HTTPException(
+            status_code=400, detail="TELEGRAM_WEBHOOK_SECRET is not configured"
+        )
 
-    hook_url = f"{base_url.rstrip('/')}/telegram/webhook/{settings.telegram_webhook_secret}"
+    hook_url = (
+        f"{base_url.rstrip('/')}/telegram/webhook/{settings.telegram_webhook_secret}"
+    )
 
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.post(
