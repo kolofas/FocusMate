@@ -54,7 +54,6 @@ def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     source = TaskSource.TELEGRAM
     dedup_key = make_dedup(text)
     db = ctx.db
-    telegram_user = ctx.telegram_user
 
     if is_duplicate_inbox(db, source.value, dedup_key):
         return {"ok": True, "duplicate": True}
@@ -67,12 +66,10 @@ def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
         status=TaskStatus.INBOX,
         raw_text=text,
     )
-    if telegram_user:
-        task.user_id = telegram_user.id
+    task.user_id = ctx.telegram_user.id
 
     event = save_inbox_event(db, source.value, dedup_key)
-    if telegram_user:
-        event.user_id = telegram_user.id
+    event.user_id = ctx.telegram_user.id
 
     db.commit()
     db.refresh(task)
