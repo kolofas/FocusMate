@@ -9,7 +9,10 @@ from sqlalchemy.orm import Session
 
 from ..database.core import get_db
 from ..settings import settings
-from ..services import telegram_bot
+from ..services.telegram.inbox_flow import try_handle_command, process_inbox_text
+from ..services.telegram.extractors import extract_text_and_chat_id
+from ..services.telegram.api import send_reply
+from ..services.telegram.types import TelegramContext, TelegramMeta
 from ..services.telegram_users import get_or_create_telegram_user
 
 router = APIRouter()
@@ -59,7 +62,7 @@ async def telegram_webhook(
     if settings.telegram_log_updates:
         log.info("tg.update: %s", update)
 
-    text, chat_id, meta = telegram_bot.extract_text_and_chat_id(update)
+    text, chat_id, meta = extract_text_and_chat_id(update)
     if not text:
         return {"ok": True, "skipped": True}
 
@@ -74,26 +77,30 @@ async def telegram_webhook(
 
     # команды обрабатываем только если знаем пользователя
     if telegram_user is not None:
-        handled = await telegram_bot.try_handle_command(
-            text,
-            chat_id,
-            db,
-            telegram_user,
+        ctx = TelegramContext(
+            chat_id=chat_id,
+            db=db,
+            telegram_user=telegram_user,
+            meta=TelegramMeta(
+                username=meta.get("username"),
+                first_name=meta.get("first_name"),
+            ),
         )
+        handled = await try_handle_command(text, ctx)
         if handled:
             return {"ok": True, "command": True}
 
     # обычный инбокс
-    result = telegram_bot.process_inbox_text(
+    result = process_inbox_text(
         db,
         text,
         telegram_user=telegram_user,
     )
 
     if result.get("duplicate"):
-        await telegram_bot.send_reply(chat_id, text="Это уже есть в инбоксе 👌")
+        await send_reply(chat_id, "Это уже есть в инбоксе 👌")
     else:
-        await telegram_bot.send_reply(chat_id, text=f"Добавил: {result.get('title')}")
+        await send_reply(chat_id, text=f"Добавил: {result.get('title')}")
 
     return result
 

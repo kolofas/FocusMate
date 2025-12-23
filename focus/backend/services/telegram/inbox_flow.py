@@ -2,22 +2,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
-from ..database import models
-from ..database.enums import TaskSource, TaskStatus
-from ..services import (
+from focus.backend.database.enums import TaskSource, TaskStatus
+from focus.backend.services import (
     InboxParser,
-    create_task_from_parsed,
-    is_duplicate_inbox,
     make_dedup,
+    is_duplicate_inbox,
+    create_task_from_parsed,
     save_inbox_event,
 )
-
-from .telegram.types import TelegramContext
-from .telegram.api import send_reply
-from .telegram.commands import COMMAND_HANDLERS
+from focus.backend.services.telegram.api import send_reply
+from focus.backend.services.telegram.commands import COMMAND_HANDLERS
+from focus.backend.services.telegram.types import TelegramContext
 
 _parser = InboxParser(tz=ZoneInfo("Europe/Amsterdam"))
 
@@ -45,12 +42,7 @@ async def try_handle_command(text: str, ctx: TelegramContext) -> bool:
     return False
 
 
-def process_inbox_text(
-    db: Session,
-    text: str,
-    *,
-    telegram_user: models.TelegramUser | None = None,
-) -> dict[str, Any]:
+def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     """
     Базовый инбокс-флоу для входящего текста из Telegram:
       - dedup по source+text,
@@ -61,6 +53,8 @@ def process_inbox_text(
     """
     source = TaskSource.TELEGRAM
     dedup_key = make_dedup(text)
+    db = ctx.db
+    telegram_user = ctx.telegram_user
 
     if is_duplicate_inbox(db, source.value, dedup_key):
         return {"ok": True, "duplicate": True}
