@@ -4,6 +4,8 @@ from typing import Any
 
 from zoneinfo import ZoneInfo
 
+from sqlalchemy.exc import IntegrityError
+
 from focus.backend.database.enums import TaskSource, TaskStatus
 from focus.backend.services import (
     InboxParser,
@@ -71,7 +73,11 @@ def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     event = save_inbox_event(db, source.value, dedup_key)
     event.user_id = ctx.telegram_user.id
 
-    db.commit()
-    db.refresh(task)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return {"ok": True, "duplicate": True}
 
+    db.refresh(task)
     return {"ok": True, "duplicate": False, "task_id": task.id, "title": task.title}

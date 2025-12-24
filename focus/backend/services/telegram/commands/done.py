@@ -7,15 +7,35 @@ from focus.backend.database.enums import TaskStatus
 from focus.backend.services.tasks import change_task_status
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.formatters import format_task_line
+from focus.backend.services.telegram.next_actions import suggest_next_action_line
 from focus.backend.services.telegram.types import TelegramContext
+
+
+def _get_user_task_or_none(ctx: TelegramContext, task_id: int) -> models.Task | None:
+    return (
+        ctx.db.execute(
+            select(models.Task).where(
+                models.Task.id == task_id,
+                models.Task.user_id == ctx.telegram_user.id,
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+
+def _build_done_reply(task: models.Task, old_status: str, next_line: str) -> str:
+    return (
+        f"Закрыта: {format_task_line(task)}\n"
+        f"Изменение: {old_status} → {task.status}\n"
+        f"{next_line}"
+    )
 
 
 async def command_done(ctx: TelegramContext, args: Sequence[str]) -> None:
     """
     /done <id> — отметить задачу пользователя выполненной.
     """
-    db = ctx.db
-    user_id = ctx.telegram_user.id
     chat_id = ctx.chat_id
 
     if not args or not args[0].isdigit():
@@ -23,38 +43,25 @@ async def command_done(ctx: TelegramContext, args: Sequence[str]) -> None:
         return
 
     task_id = int(args[0])
-
-    task = (
-        db.execute(
-            select(models.Task).where(
-                models.Task.id == task_id,
-                models.Task.user_id == user_id,
-            )
-        )
-        .scalars()
-        .first()
-    )
+    task = _get_user_task_or_none(ctx, task_id)
 
     if not task:
-        await send_reply(chat_id, f"Не нашёл задачу с id {task_id}.")
+        await send_reply(
+            chat_id, f"Не нашёл задачу с id {task_id}. Попробуй /today или /tasks"
+        )
         return
 
-    if task.status == TaskStatus.DONE.value:
-        await send_reply(chat_id, f"Уже закрыта: {format_task_line(task)}")
+    old_status = task.status
+    if old_status == TaskStatus.DONE.value:
+        await send_reply(
+            chat_id,
+            f"Уже закрыта: {format_task_line(task)}\nДальше: /today или /tasks planned",
+        )
         return
 
-    before = task.status
     change_task_status(task, TaskStatus.DONE)
-    db.commit()
-    db.refresh(task)
+    ctx.db.commit()
+    ctx.db.refresh(task)
 
-    await send_reply(
-        chat_id,
-        "\n".join(
-            [
-                f"Закрыта: {format_task_line(task)}",
-                f"Было: {before} → стало: {task.status}",
-                "Дальше: /today или /tasks planned",
-            ]
-        ),
-    )
+    next_line = suggest_next_action_line(ctx)
+    await send_reply(chat_id, _build_done_reply(task, old_status, next_line))
