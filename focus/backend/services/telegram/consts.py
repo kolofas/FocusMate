@@ -9,6 +9,8 @@ HELP_TEXT = (
     "/tasks            — последние задачи (с фильтрами)\n"
     "/done <id>        — отметить задачу выполненной\n"
     "/status <id> <st> — изменить статус (inbox|planned|done|snoozed)\n"
+    "/d <id> — alias для /done\n"
+    "/s <id> <st> — alias для /status\n"
     "/help             — эта справка\n\n"
     "Фильтры для /tasks:\n"
     "  /tasks planned         — только planned\n"

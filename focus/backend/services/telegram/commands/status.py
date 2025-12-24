@@ -15,7 +15,7 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
     /status <id> <st> — изменить статус задачи (inbox|planned|done|snoozed).
     """
     db = ctx.db
-    telegram_user = ctx.telegram_user
+    user_id = ctx.telegram_user.id
     chat_id = ctx.chat_id
 
     if len(args) < 2 or not args[0].isdigit():
@@ -34,27 +34,39 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
         )
         return
 
-    stmt = (
-        select(models.Task)
-        .where(
-            models.Task.id == task_id,
-            models.Task.user_id == telegram_user.id,
+    task = (
+        db.execute(
+            select(models.Task).where(
+                models.Task.id == task_id,
+                models.Task.user_id == user_id,
+            )
         )
-        .limit(1)
+        .scalars()
+        .first()
     )
 
-    task = db.execute(stmt).scalars().first()
-
     if not task:
-        await send_reply(chat_id, f"Задача с id {task_id} не найдена")
+        await send_reply(chat_id, f"Не нашёл задачу с id {task_id}.")
         return
 
     if task.status == new_status.value:
-        await send_reply(chat_id, f"Статус уже {new_status.value}.")
+        await send_reply(
+            chat_id, f"Статус уже {new_status.value}: {format_task_line(task)}"
+        )
         return
 
+    before = task.status
     change_task_status(task, new_status)
     db.commit()
     db.refresh(task)
 
-    await send_reply(chat_id, f"Статус обновлён: {format_task_line(task)}")
+    await send_reply(
+        chat_id,
+        "\n".join(
+            [
+                f"Обновил: {format_task_line(task)}",
+                f"Было: {before} → стало: {task.status}",
+                "Подсказка: /today • /tasks planned • /status <id> done",
+            ]
+        ),
+    )

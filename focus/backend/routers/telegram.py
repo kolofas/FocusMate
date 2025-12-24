@@ -66,41 +66,31 @@ async def telegram_webhook(
     if not text:
         return {"ok": True, "skipped": True}
 
-    telegram_user = None
-    if chat_id is not None:
-        telegram_user = get_or_create_telegram_user(
-            db,
-            chat_id=chat_id,
+    telegram_user = get_or_create_telegram_user(
+        db,
+        chat_id=chat_id,
+        username=meta.get("username"),
+        first_name=meta.get("first_name"),
+    )
+    ctx = TelegramContext(
+        chat_id=chat_id,
+        db=db,
+        telegram_user=telegram_user,
+        meta=TelegramMeta(
             username=meta.get("username"),
             first_name=meta.get("first_name"),
-        )
-
-    # команды обрабатываем только если знаем пользователя
-    if telegram_user is not None:
-        ctx = TelegramContext(
-            chat_id=chat_id,
-            db=db,
-            telegram_user=telegram_user,
-            meta=TelegramMeta(
-                username=meta.get("username"),
-                first_name=meta.get("first_name"),
-            ),
-        )
-        handled = await try_handle_command(text, ctx)
-        if handled:
-            return {"ok": True, "command": True}
-
-    # обычный инбокс
-    result = process_inbox_text(
-        db,
-        text,
-        telegram_user=telegram_user,
+        ),
     )
 
+    handled = await try_handle_command(text, ctx)
+    if handled:
+        return {"ok": True, "command": True}
+
+    result = process_inbox_text(text, ctx)
     if result.get("duplicate"):
         await send_reply(chat_id, "Это уже есть в инбоксе 👌")
     else:
-        await send_reply(chat_id, text=f"Добавил: {result.get('title')}")
+        await send_reply(chat_id, f"Добавил: {result.get('title')}")
 
     return result
 

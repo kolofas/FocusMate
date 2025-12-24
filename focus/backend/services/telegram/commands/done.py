@@ -15,7 +15,7 @@ async def command_done(ctx: TelegramContext, args: Sequence[str]) -> None:
     /done <id> — отметить задачу пользователя выполненной.
     """
     db = ctx.db
-    telegram_user = ctx.telegram_user
+    user_id = ctx.telegram_user.id
     chat_id = ctx.chat_id
 
     if not args or not args[0].isdigit():
@@ -23,26 +23,38 @@ async def command_done(ctx: TelegramContext, args: Sequence[str]) -> None:
         return
 
     task_id = int(args[0])
-    stmt = (
-        select(models.Task)
-        .where(
-            models.Task.id == task_id,
-            models.Task.user_id == telegram_user.id,
+
+    task = (
+        db.execute(
+            select(models.Task).where(
+                models.Task.id == task_id,
+                models.Task.user_id == user_id,
+            )
         )
-        .limit(1)
+        .scalars()
+        .first()
     )
-    task = db.execute(stmt).scalars().first()
 
     if not task:
-        await send_reply(chat_id, f"Задача с id {task_id} не найдена")
+        await send_reply(chat_id, f"Не нашёл задачу с id {task_id}.")
         return
 
     if task.status == TaskStatus.DONE.value:
-        await send_reply(chat_id, "Эта задача уже в статусе done ✅")
+        await send_reply(chat_id, f"Уже закрыта: {format_task_line(task)}")
         return
 
+    before = task.status
     change_task_status(task, TaskStatus.DONE)
     db.commit()
     db.refresh(task)
 
-    await send_reply(chat_id=chat_id, text=f"Готово: {format_task_line(task)}")
+    await send_reply(
+        chat_id,
+        "\n".join(
+            [
+                f"Закрыта: {format_task_line(task)}",
+                f"Было: {before} → стало: {task.status}",
+                "Дальше: /today или /tasks planned",
+            ]
+        ),
+    )

@@ -13,4 +13,6 @@ COMMAND_HANDLERS: dict[str, CommandHandler] = {
     "/start": command_help,
     "/done": command_done,
     "/status": command_status,
+    "/d": command_done,
+    "/s": command_status,
 }

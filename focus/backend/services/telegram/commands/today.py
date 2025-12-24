@@ -55,5 +55,11 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
     lines = [header]
     for item in items:
         emoji = STATUS_EMOJI.get(item.task.status, "•")
-        lines.append(f"{item.rank}. {emoji} {item.task.title} ({item.score}🔸)")
+        lines.append(
+            f"{item.rank}. {emoji} [id: {item.task.id}] {item.task.title} ({item.score}🔸)"
+        )
+
+    lines.append("")
+    lines.append("Закрыть: /done <id> • Статус: /status <id> planned")
+
     await send_reply(chat_id, "\n".join(lines))
