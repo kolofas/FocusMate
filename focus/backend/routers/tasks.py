@@ -2,13 +2,15 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Query
-from sqlalchemy import select, desc, func, asc
+from sqlalchemy import desc, func, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from focus.backend.database.core import get_db
 from ..database import models
+from ..repositories.tasks_repo import TaskRepo
 from ..schemas import TaskRead, TaskCreate, TaskUpdate, StatusChange
 from focus.backend.database.enums import TaskStatus
+from ..schemas.task_queries import TaskListQuery
 from ..utils.tags import canonicalize_tags
 from ..settings import settings
 from ..services.tasks import change_task_status
@@ -53,26 +55,29 @@ async def list_tasks(
     direction: str = Query("desc", alias="dir"),
     user_id: int | None = Query(None, description="filter by user"),
 ):
-    stmt = select(models.Task)
-    if user_id is None:
-        stmt = stmt.where(models.Task.user_id.is_(None))
-    else:
-        stmt = stmt.where(models.Task.user_id == user_id)
+    if status and status not in ALLOWED_STATUS:
+        raise HTTPException(400, detail="Invalid status")
+    if order_by not in ALLOWED_ORDER or direction not in ALLOWED_DIR:
+        raise HTTPException(400, detail="Invalid order/dir")
 
-    if tag:
-        stmt = stmt.where(models.Task.tags.contains([tag.lower()]))
+    query = TaskListQuery(
+        user_id=user_id,
+        limit=limit,
+        offset=offset,
+        status=status,
+        q=q,
+        tag=tag,
+        order_by=order_by,
+        direction=direction,
+    )
 
-    stmt = apply_filters(stmt, status, q)
-    stmt = apply_ordering(stmt, order_by, direction)
-    stmt = stmt.limit(limit).offset(offset)
-
-    result = await db.execute(stmt)
-    return result.scalars().all()
+    repo = TaskRepo(db)
+    return await repo.list_tasks(query)
 
 
 @router.get("/{task_id}", response_model=TaskRead)
-def get_task(task_id: int, db: AsyncSession = Depends(get_db)):
-    obj = db.get(models.Task, task_id)
+async def get_task(task_id: int, db: AsyncSession = Depends(get_db)):
+    obj = await db.get(models.Task, task_id)
     if not obj:
         raise HTTPException(404, detail="Task not found")
     return obj
@@ -105,7 +110,7 @@ async def create_task(
 async def update_task(
     task_id: int, payload: TaskUpdate, db: AsyncSession = Depends(get_db)
 ):
-    obj = db.get(models.Task, task_id)
+    obj = await db.get(models.Task, task_id)
     if not obj:
         raise HTTPException(404, detail="Task not found")
 
@@ -135,7 +140,7 @@ async def update_task(
 
 @router.delete("/{task_id}", status_code=204)
 async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
-    obj = db.get(models.Task, task_id)
+    obj = await db.get(models.Task, task_id)
     if not obj:
         raise HTTPException(404, detail="Task not found")
     try:
