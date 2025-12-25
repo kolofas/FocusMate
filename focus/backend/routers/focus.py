@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from focus.backend.database.core import get_db
 from ..schemas import PlanTodayResponse
@@ -12,12 +12,12 @@ router = APIRouter()
 
 
 @router.get("/today", response_model=PlanTodayResponse)
-def read_today_plan(
-    db: Session = Depends(get_db),
+async def read_today_plan(
+    db: AsyncSession = Depends(get_db),
     user_id: int | None = Query(None, description="optional user id"),
 ) -> PlanTodayResponse:
     """
     Возвращает FocusList на сегодня.
     Если отсутствует — строит его (планировщик v0).
     """
-    return get_plan_today(db, user_id=user_id, ensure_build=True)
+    return await get_plan_today(db, user_id=user_id, ensure_build=True)

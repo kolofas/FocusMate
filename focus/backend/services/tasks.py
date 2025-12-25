@@ -1,6 +1,6 @@
 # backend/tasks.py
 from typing import Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import models
 from focus.backend.services import ParsedInbox
 from focus.backend.database.enums import TaskSource, TaskStatus
@@ -12,8 +12,8 @@ from focus.backend.utils.tags import canonicalize_tags
 MAX_DESC_LEN = settings.max_description_length  # единая константа
 
 
-def create_task_from_parsed(
-    db: Session,
+async def create_task_from_parsed(
+    db: AsyncSession,
     parsed: ParsedInbox,
     *,
     source: TaskSource,
@@ -48,10 +48,11 @@ def create_task_from_parsed(
     )
 
     db.add(task)
+    await db.flush()
     return task
 
 
-def change_task_status(task: models.Task, new_status: TaskStatus) -> None:
+async def change_task_status(task: models.Task, new_status: TaskStatus) -> None:
     """
     Единое место смены статуса задачи.
     Сейчас просто присваивает строковое значение, но сюда можно будет

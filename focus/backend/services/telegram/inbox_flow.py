@@ -10,7 +10,6 @@ from focus.backend.database.enums import TaskSource, TaskStatus
 from focus.backend.services import (
     InboxParser,
     make_dedup,
-    is_duplicate_inbox,
     create_task_from_parsed,
     save_inbox_event,
 )
@@ -44,7 +43,7 @@ async def try_handle_command(text: str, ctx: TelegramContext) -> bool:
     return False
 
 
-def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
+async def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     """
     Базовый инбокс-флоу для входящего текста из Telegram:
       - dedup по source+text,
@@ -57,11 +56,16 @@ def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     dedup_key = make_dedup(text)
     db = ctx.db
 
-    if is_duplicate_inbox(db, source.value, dedup_key):
+    try:
+        event = await save_inbox_event(db, source.value, dedup_key)
+        event.user_id = ctx.telegram_user.id
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
         return {"ok": True, "duplicate": True}
 
     parsed = _parser.parse(text)
-    task = create_task_from_parsed(
+    task = await create_task_from_parsed(
         db,
         parsed,
         source=source,
@@ -70,14 +74,7 @@ def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     )
     task.user_id = ctx.telegram_user.id
 
-    event = save_inbox_event(db, source.value, dedup_key)
-    event.user_id = ctx.telegram_user.id
+    await db.commit()
+    await db.refresh(task)
 
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        return {"ok": True, "duplicate": True}
-
-    db.refresh(task)
     return {"ok": True, "duplicate": False, "task_id": task.id, "title": task.title}

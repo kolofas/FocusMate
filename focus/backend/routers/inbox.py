@@ -1,6 +1,6 @@
 # backend/routers/inbox.py
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from zoneinfo import ZoneInfo
 
 from focus.backend.database.core import get_db
@@ -21,7 +21,9 @@ _parser = InboxParser(tz=ZoneInfo("Europe/Amsterdam"))
 
 
 @router.post("/telegram", response_model=TaskRead, status_code=201)
-def accept_from_telegram(payload: InboxTelegram, db: Session = Depends(get_db)):
+async def accept_from_telegram(
+    payload: InboxTelegram, db: AsyncSession = Depends(get_db)
+):
     """
     Приём задачи из Telegram:
       1. считаем dedup-ключ → проверяем дубль,
@@ -37,24 +39,24 @@ def accept_from_telegram(payload: InboxTelegram, db: Session = Depends(get_db)):
     source = TaskSource.TELEGRAM
     dedup_key = make_dedup(text)
 
-    if is_duplicate_inbox(db, source.value, dedup_key):
+    if await is_duplicate_inbox(db, source.value, dedup_key):
         raise HTTPException(409, "Duplicate inbox message")
 
     parsed = _parser.parse(text)
 
     try:
-        task = create_task_from_parsed(
+        task = await create_task_from_parsed(
             db,
             parsed,
             source=source,
             status=TaskStatus.INBOX,
             raw_text=text,
         )
-        save_inbox_event(db, source.value, dedup_key)
-        db.commit()
-        db.refresh(task)
+        await save_inbox_event(db, source.value, dedup_key)
+        await db.commit()
+        await db.refresh(task)
         return task
 
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise

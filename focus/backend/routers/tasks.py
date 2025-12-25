@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Query
 from sqlalchemy import select, desc, func, asc
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from focus.backend.database.core import get_db
 from ..database import models
@@ -40,8 +40,8 @@ def apply_ordering(stmt, order_by: str, direction: str):
 
 
 @router.get("/", response_model=List[TaskRead])
-def list_tasks(
-    db: Session = Depends(get_db),
+async def list_tasks(
+    db: AsyncSession = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     status: Optional[str] = Query(None, description="inbox|planned|done|snoozed"),
@@ -65,11 +65,13 @@ def list_tasks(
     stmt = apply_filters(stmt, status, q)
     stmt = apply_ordering(stmt, order_by, direction)
     stmt = stmt.limit(limit).offset(offset)
-    return db.execute(stmt).scalars().all()
+
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get("/{task_id}", response_model=TaskRead)
-def get_task(task_id: int, db: Session = Depends(get_db)):
+def get_task(task_id: int, db: AsyncSession = Depends(get_db)):
     obj = db.get(models.Task, task_id)
     if not obj:
         raise HTTPException(404, detail="Task not found")
@@ -77,7 +79,9 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=TaskRead, status_code=201)
-def create_task(payload: TaskCreate, response: Response, db: Session = Depends(get_db)):
+async def create_task(
+    payload: TaskCreate, response: Response, db: AsyncSession = Depends(get_db)
+):
     obj = models.Task(
         title=(payload.title or "").strip(),
         description=((payload.description or "")[:MAX_DESC_LEN]),
@@ -88,17 +92,19 @@ def create_task(payload: TaskCreate, response: Response, db: Session = Depends(g
     )
     try:
         db.add(obj)
-        db.commit()
-        db.refresh(obj)
+        await db.commit()
+        await db.refresh(obj)
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise
     response.headers["Location"] = f"/tasks/{obj.id}"
     return obj
 
 
 @router.patch("/{task_id}", response_model=TaskRead)
-def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)):
+async def update_task(
+    task_id: int, payload: TaskUpdate, db: AsyncSession = Depends(get_db)
+):
     obj = db.get(models.Task, task_id)
     if not obj:
         raise HTTPException(404, detail="Task not found")
@@ -119,40 +125,41 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
         setattr(obj, field, value)
 
     try:
-        db.commit()
-        db.refresh(obj)
+        await db.commit()
+        await db.refresh(obj)
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise
     return obj
 
 
 @router.delete("/{task_id}", status_code=204)
-def delete_task(task_id: int, db: Session = Depends(get_db)):
+async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
     obj = db.get(models.Task, task_id)
     if not obj:
         raise HTTPException(404, detail="Task not found")
     try:
-        db.delete(obj)
-        db.commit()
+        await db.delete(obj)
+        await db.commit()
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise
 
 
 @router.post("/{task_id}/status", response_model=TaskRead)
-def change_status(task_id: int, payload: StatusChange, db: Session = Depends(get_db)):
-    obj = db.get(models.Task, task_id)
+async def change_status(
+    task_id: int, payload: StatusChange, db: AsyncSession = Depends(get_db)
+):
+    obj = await db.get(models.Task, task_id)
     if not obj:
         raise HTTPException(404, detail="Task not found")
 
-    # простые guards можно добавить позже
-    change_task_status(obj, payload.status)
+    await change_task_status(obj, payload.status)
 
     try:
-        db.commit()
-        db.refresh(obj)
+        await db.commit()
+        await db.refresh(obj)
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise
     return obj

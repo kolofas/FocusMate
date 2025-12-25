@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional, Sequence, TypeAlias
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from focus.backend.database import models
 
@@ -24,7 +24,7 @@ class TelegramContext:
     """
 
     chat_id: Optional[int]
-    db: Session
+    db: AsyncSession
     telegram_user: models.TelegramUser
     meta: TelegramMeta | None = None
 

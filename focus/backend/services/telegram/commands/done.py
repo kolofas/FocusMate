@@ -11,17 +11,16 @@ from focus.backend.services.telegram.next_actions import suggest_next_action_lin
 from focus.backend.services.telegram.types import TelegramContext
 
 
-def _get_user_task_or_none(ctx: TelegramContext, task_id: int) -> models.Task | None:
-    return (
-        ctx.db.execute(
-            select(models.Task).where(
-                models.Task.id == task_id,
-                models.Task.user_id == ctx.telegram_user.id,
-            )
+async def _get_user_task_or_none(
+    ctx: TelegramContext, task_id: int
+) -> models.Task | None:
+    result = await ctx.db.execute(
+        select(models.Task).where(
+            models.Task.id == task_id,
+            models.Task.user_id == ctx.telegram_user.id,
         )
-        .scalars()
-        .first()
     )
+    return result.scalars().first()
 
 
 def _build_done_reply(task: models.Task, old_status: str, next_line: str) -> str:
@@ -43,7 +42,7 @@ async def command_done(ctx: TelegramContext, args: Sequence[str]) -> None:
         return
 
     task_id = int(args[0])
-    task = _get_user_task_or_none(ctx, task_id)
+    task = await _get_user_task_or_none(ctx, task_id)
 
     if not task:
         await send_reply(
@@ -59,9 +58,10 @@ async def command_done(ctx: TelegramContext, args: Sequence[str]) -> None:
         )
         return
 
-    change_task_status(task, TaskStatus.DONE)
-    ctx.db.commit()
-    ctx.db.refresh(task)
+    await change_task_status(task, TaskStatus.DONE)
 
-    next_line = suggest_next_action_line(ctx)
+    await ctx.db.commit()
+    await ctx.db.refresh(task)
+
+    next_line = await suggest_next_action_line(ctx)
     await send_reply(chat_id, _build_done_reply(task, old_status, next_line))

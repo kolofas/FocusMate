@@ -37,7 +37,7 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
         )
         return
 
-    task = get_user_task(ctx.db, user_id=user_id, task_id=task_id)
+    task = await get_user_task(ctx.db, user_id=user_id, task_id=task_id)
     if not task:
         await send_reply(
             chat_id, f"Не нашёл задачу с id {task_id}. Попробуй /today или /tasks"
@@ -48,7 +48,7 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
     if before == new_status.value:
         await send_reply(
             chat_id,
-            f"Статус уже {new_status.value}: {format_task_line(task)}\n{suggest_next_action_line(ctx)}",
+            f"Статус уже {new_status.value}: {format_task_line(task)}\n{await suggest_next_action_line(ctx)}",
         )
         return
 
@@ -59,9 +59,9 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
         )
         return
 
-    change_task_status(task, new_status)
-    ctx.db.commit()
-    ctx.db.refresh(task)
+    await change_task_status(task, new_status)
+    await ctx.db.commit()
+    await ctx.db.refresh(task)
 
     await send_reply(
         chat_id,
@@ -69,7 +69,7 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
             [
                 f"Обновил: {format_task_line(task)}",
                 f"Было: {before} → стало: {task.status}",
-                suggest_next_action_line(ctx),
+                await suggest_next_action_line(ctx),
             ]
         ),
     )

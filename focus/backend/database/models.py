@@ -87,7 +87,10 @@ class FocusList(Base):
     )
 
     items = relationship(
-        "FocusItem", back_populates="focus_list", cascade="all, delete-orphan"
+        "FocusItem",
+        back_populates="focus_list",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     __table_args__ = (
@@ -117,7 +120,7 @@ class FocusItem(Base):
     )
 
     focus_list = relationship("FocusList", back_populates="items")
-    task = relationship("Task")
+    task = relationship("Task", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint(

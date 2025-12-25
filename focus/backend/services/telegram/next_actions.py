@@ -6,11 +6,13 @@ from focus.backend.services.telegram.formatters import format_task_line
 from focus.backend.services.telegram.types import TelegramContext
 
 
-def suggest_next_action_line(ctx: TelegramContext) -> str:
+async def suggest_next_action_line(ctx: TelegramContext) -> str:
     default = "Дальше: /today или /tasks planned"
 
     try:
-        plan = get_plan_today(ctx.db, user_id=ctx.telegram_user.id, ensure_build=True)
+        plan = await get_plan_today(
+            ctx.db, user_id=ctx.telegram_user.id, ensure_build=True
+        )
         remaining = [it for it in plan.items if it.task.status != TaskStatus.DONE.value]
         if remaining:
             it = sorted(remaining, key=lambda x: x.rank)[0]

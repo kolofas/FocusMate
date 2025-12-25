@@ -5,7 +5,7 @@ from typing import Any, Dict
 import httpx
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database.core import get_db
 from ..settings import settings
@@ -46,7 +46,7 @@ def _get_bot_token_or_500() -> str:
 
 @router.post("/webhook/{secret}")
 async def telegram_webhook(
-    secret: str, request: Request, db: Session = Depends(get_db)
+    secret: str, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """
     Точка входа для Telegram webhook.
@@ -66,7 +66,7 @@ async def telegram_webhook(
     if not text:
         return {"ok": True, "skipped": True}
 
-    telegram_user = get_or_create_telegram_user(
+    telegram_user = await get_or_create_telegram_user(
         db,
         chat_id=chat_id,
         username=meta.get("username"),
@@ -86,7 +86,7 @@ async def telegram_webhook(
     if handled:
         return {"ok": True, "command": True}
 
-    result = process_inbox_text(text, ctx)
+    result = await process_inbox_text(text, ctx)
     if result.get("duplicate"):
         await send_reply(chat_id, "Это уже есть в инбоксе 👌")
     else:

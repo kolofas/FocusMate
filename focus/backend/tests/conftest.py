@@ -1,10 +1,11 @@
-# focus/backend/tests/conftest.py
 from __future__ import annotations
 
+import uuid
+
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+import httpx
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from focus.backend.app import app
 from focus.backend.database.models import Base
@@ -12,52 +13,60 @@ from focus.backend.database.core import get_db
 from focus.backend.settings import settings
 
 
-TEST_SCHEMA = "test_schema"
-
-
 @pytest.fixture(scope="session")
-def engine():
-    url = settings.database_url
-    eng = create_engine(url, future=True)
-
-    # все DDL — на одном соединении с выставленным search_path
-    with eng.begin() as conn:
-        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{TEST_SCHEMA}"'))
-        conn.execute(text(f'SET search_path TO "{TEST_SCHEMA}"'))
-        Base.metadata.drop_all(bind=conn)
-        Base.metadata.create_all(bind=conn)
-
-    yield eng
-
-    # чистим схему после сессии
-    with eng.begin() as conn:
-        conn.execute(text("SET search_path TO public"))
-        conn.execute(text(f'DROP SCHEMA IF EXISTS "{TEST_SCHEMA}" CASCADE'))
+def anyio_backend():
+    return "asyncio"
 
 
 @pytest.fixture
-def db_session(engine):
-    SessionLocal = sessionmaker(
-        bind=engine, autoflush=False, autocommit=False, future=True
-    )
-    sess = SessionLocal()
-    sess.execute(text(f'SET search_path TO "{TEST_SCHEMA}"'))
+async def engine_and_schema():
+    """
+    Важно: function-scope.
+    Каждый тест получает свой schema + свой engine, созданные в том же event loop,
+    что и тест (AnyIO), поэтому asyncpg не ругается на "different loop".
+    """
+    schema = f"test_{uuid.uuid4().hex}"
+
+    engine = create_async_engine(settings.database_url, future=True)
+
+    async with engine.begin() as conn:
+        await conn.execute(text(f'CREATE SCHEMA "{schema}"'))
+        await conn.execute(text(f'SET search_path TO "{schema}"'))
+        await conn.run_sync(Base.metadata.create_all)
+
     try:
-        yield sess
+        yield engine, schema
     finally:
-        sess.rollback()
-        sess.close()
+        async with engine.begin() as conn:
+            await conn.execute(text("SET search_path TO public"))
+            await conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+        await engine.dispose()
 
 
 @pytest.fixture
-def client(db_session):
-    def _override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
+async def client(engine_and_schema):
+    engine, schema = engine_and_schema
+
+    SessionLocal = async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        autoflush=False,
+        autocommit=False,
+        expire_on_commit=False,
+    )
+
+    async def _override_get_db():
+        async with SessionLocal() as session:
+            # выставляем schema для каждого запроса
+            await session.execute(text(f'SET search_path TO "{schema}"'))
+            yield session
+            # безопасность: если роутер не закрыл транзакцию — откатим
+            await session.rollback()
 
     app.dependency_overrides[get_db] = _override_get_db
-    with TestClient(app) as c:
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+
     app.dependency_overrides.clear()

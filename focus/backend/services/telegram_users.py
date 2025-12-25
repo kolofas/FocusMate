@@ -3,21 +3,24 @@ from __future__ import annotations
 from typing import Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import models
 
 
-def _find_telegram_user(db: Session, chat_id: int) -> Optional[models.TelegramUser]:
+async def _find_telegram_user(
+    db: AsyncSession, chat_id: int
+) -> Optional[models.TelegramUser]:
     stmt = (
         select(models.TelegramUser)
         .where(models.TelegramUser.chat_id == str(chat_id))
         .limit(1)
     )
-    return db.execute(stmt).scalars().first()
+    result = await db.execute(stmt)
+    return result.scalars().first()
 
 
-def _apply_profile_updates(
+async def _apply_profile_updates(
     user: models.TelegramUser,
     *,
     username: Optional[str],
@@ -40,8 +43,8 @@ def _apply_profile_updates(
     return changed
 
 
-def get_or_create_telegram_user(
-    db: Session,
+async def get_or_create_telegram_user(
+    db: AsyncSession,
     chat_id: int,
     username: Optional[str],
     first_name: Optional[str],
@@ -51,10 +54,10 @@ def get_or_create_telegram_user(
     Если не найден — создать.
     Если найден и пришли новые поля — обновить.
     """
-    user = _find_telegram_user(db, chat_id)
+    user = await _find_telegram_user(db, chat_id)
     if user:
-        if _apply_profile_updates(user, username=username, first_name=first_name):
-            db.flush()
+        if await _apply_profile_updates(user, username=username, first_name=first_name):
+            await db.flush()
         return user
 
     user = models.TelegramUser(
@@ -63,5 +66,5 @@ def get_or_create_telegram_user(
         first_name=first_name,
     )
     db.add(user)
-    db.flush()
+    await db.flush()
     return user

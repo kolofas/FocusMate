@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import Optional
+from typing import Optional, Any, Sequence
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..database import models
 from ..database.enums import TaskStatus
@@ -69,14 +70,15 @@ def _deadline_score(deadline: datetime | None) -> int:
     return 0
 
 
-def _get_or_create_focus_list(
-    db: Session,
+async def _get_or_create_focus_list(
+    db: AsyncSession,
     target_date: date,
     *,
     user_id: Optional[int],
 ) -> models.FocusList:
     stmt = (
         select(models.FocusList)
+        .options(selectinload(models.FocusList.items))
         .where(
             models.FocusList.date == target_date,
             models.FocusList.user_id.is_(user_id)
@@ -85,17 +87,20 @@ def _get_or_create_focus_list(
         )
         .limit(1)
     )
-    obj = db.execute(stmt).scalars().first()
+    result = await db.execute(stmt)
+    obj = result.scalars().first()
     if obj:
         return obj
 
     obj = models.FocusList(date=target_date, user_id=user_id)
     db.add(obj)
-    db.flush()
+    await db.flush()
     return obj
 
 
-def _select_candidates(db: Session, *, user_id: Optional[int]) -> list[models.Task]:
+async def _select_candidates(
+    db: AsyncSession, *, user_id: Optional[int]
+) -> Sequence[Any]:
     """
     Берём только задачи этого пользователя.
     Для системных/ручных без пользователя — user_id IS NULL.
@@ -107,7 +112,9 @@ def _select_candidates(db: Session, *, user_id: Optional[int]) -> list[models.Ta
         stmt = stmt.where(models.Task.user_id.is_(None))
     else:
         stmt = stmt.where(models.Task.user_id == user_id)
-    return db.execute(stmt).scalars().all()
+
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 def _rank_key(task: models.Task):
@@ -121,8 +128,8 @@ def _rank_key(task: models.Task):
     return (s, -dl.timestamp(), -ca.timestamp())
 
 
-def plan_today(
-    db: Session,
+async def plan_today(
+    db: AsyncSession,
     *,
     user_id: Optional[int],
     limit: Optional[int] = None,
@@ -134,15 +141,26 @@ def plan_today(
     target_date = for_date or date.today()
     limit = limit or settings.focus_limit
 
-    focus_list = _get_or_create_focus_list(db, target_date, user_id=user_id)
-    candidates = _select_candidates(db, user_id=user_id)
+    focus_list = await _get_or_create_focus_list(db, target_date, user_id=user_id)
+    candidates = await _select_candidates(db, user_id=user_id)
     ranked = sorted(candidates, key=_rank_key, reverse=True)[:limit]
 
-    focus_list.items.clear()
-    for idx, task in enumerate(ranked, start=1):
-        focus_list.items.append(
-            models.FocusItem(task=task, rank=idx, score=score_task(task))
-        )
+    # 1) очистка через SQL, НЕ через relationship
+    await db.execute(
+        delete(models.FocusItem).where(models.FocusItem.focus_list_id == focus_list.id)
+    )
 
-    db.flush()
+    # 2) вставка новых items (тоже без трогания focus_list.items)
+    new_items = [
+        models.FocusItem(
+            focus_list_id=focus_list.id,
+            task_id=task.id,
+            rank=idx,
+            score=score_task(task),
+        )
+        for idx, task in enumerate(ranked, start=1)
+    ]
+    db.add_all(new_items)
+
+    await db.flush()
     return focus_list

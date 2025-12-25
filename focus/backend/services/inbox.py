@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import models
 from focus.backend.utils.normalize_text import normalize_text
@@ -22,17 +22,20 @@ def make_dedup(text: str) -> str:
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:32]
 
 
-def is_duplicate_inbox(
-    db: Session,
+async def is_duplicate_inbox(
+    db: AsyncSession,
     source: str,
     dedup_key: str,
     window_minutes: int = settings.inbox_dedup_minutes,
+    *,
+    user_id: int | None = None,
 ) -> bool:
     """
     Проверяет наличие события инбокса с тем же (source, dedup) за последнее окно времени.
     Коммит не выполняется — ответственность вызывающего.
     """
     since = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+
     stmt = (
         select(models.InboxEvent.id)
         .where(
@@ -42,13 +45,28 @@ def is_duplicate_inbox(
         )
         .limit(1)
     )
-    return db.execute(stmt).first() is not None
+
+    if user_id is not None:
+        stmt = stmt.where(models.InboxEvent.user_id == user_id)
+
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none() is not None
 
 
-def save_inbox_event(db: Session, source: str, dedup_key: str) -> models.InboxEvent:
+async def save_inbox_event(
+    db: AsyncSession,
+    source: str,
+    dedup_key: str,
+    *,
+    user_id: int | None = None,
+) -> models.InboxEvent:
     """
     Сохраняет событие инбокса. Коммит не выполняется - чтобы участвовать в общей транзакции
     """
     event = models.InboxEvent(source=source, dedup=dedup_key)
+    if user_id is not None:
+        event.user_id = user_id
+
     db.add(event)
+    await db.flush()
     return event

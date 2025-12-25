@@ -40,7 +40,8 @@ async def command_tasks(ctx: TelegramContext, args: Sequence[str]) -> None:
     if not show_all:
         stmt = stmt.limit(limit)
 
-    tasks = db.execute(stmt).scalars().all()
+    result = await db.execute(stmt)
+    tasks = result.scalars().all()
     if not tasks:
         await send_reply(chat_id, "Задач пока нет.")
         return

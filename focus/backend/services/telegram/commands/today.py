@@ -23,7 +23,7 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
 
     status_filter, include_done = parse_today_filters(args)
 
-    plan = get_plan_today(db, user_id=telegram_user.id, ensure_build=True)
+    plan = await get_plan_today(db, user_id=telegram_user.id, ensure_build=True)
     items = list(plan.items)
 
     if status_filter:
