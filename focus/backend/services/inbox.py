@@ -1,16 +1,17 @@
-from __future__ import annotations
-
 import hashlib
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import select
+from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..database import models
+from focus.backend.database import models
+from focus.backend.database.enums import TaskSource, TaskStatus
+from focus.backend.repositories.inbox_repo import InboxRepo
+from focus.backend.services.tasks import create_task_from_parsed
+from focus.backend.schemas import InboxTelegram
 from focus.backend.utils.normalize_text import normalize_text
-from ..settings import settings
+from focus.backend.services.parsing import InboxParser
 
 
-__all__ = ["make_dedup", "is_duplicate_inbox", "save_inbox_event"]
+_parser = InboxParser(tz=ZoneInfo("Europe/Amsterdam"))
 
 
 def make_dedup(text: str) -> str:
@@ -22,51 +23,41 @@ def make_dedup(text: str) -> str:
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:32]
 
 
-async def is_duplicate_inbox(
+async def accept_inbox_from_telegram(
     db: AsyncSession,
-    source: str,
-    dedup_key: str,
-    window_minutes: int = settings.inbox_dedup_minutes,
+    payload: InboxTelegram,
     *,
     user_id: int | None = None,
-) -> bool:
-    """
-    Проверяет наличие события инбокса с тем же (source, dedup) за последнее окно времени.
-    Коммит не выполняется — ответственность вызывающего.
-    """
-    since = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+) -> models.Task:
+    text = (payload.text or "").strip()
+    if not text:
+        raise ValueError("empty inbox message")
 
-    stmt = (
-        select(models.InboxEvent.id)
-        .where(
-            models.InboxEvent.source == source,
-            models.InboxEvent.dedup == dedup_key,
-            models.InboxEvent.created_at >= since,
+    source = TaskSource.TELEGRAM
+    dedup_key = make_dedup(text)
+
+    inbox_repo = InboxRepo(db)
+
+    if await inbox_repo.exists_recent(
+        source=source.value,
+        dedup_key=dedup_key,
+    ):
+        raise DuplicateInboxError()
+
+    parsed = _parser.parse(text)
+
+    try:
+        task = await create_task_from_parsed(
+            db, parsed, source=source, status=TaskStatus.INBOX, raw_text=text
         )
-        .limit(1)
-    )
+        await inbox_repo.add(source=source.value, dedup_key=dedup_key, user_id=user_id)
+        await db.commit()
+        await db.refresh(task)
+        return task
+    except Exception:
+        await db.rollback()
+        raise
 
-    if user_id is not None:
-        stmt = stmt.where(models.InboxEvent.user_id == user_id)
 
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none() is not None
-
-
-async def save_inbox_event(
-    db: AsyncSession,
-    source: str,
-    dedup_key: str,
-    *,
-    user_id: int | None = None,
-) -> models.InboxEvent:
-    """
-    Сохраняет событие инбокса. Коммит не выполняется - чтобы участвовать в общей транзакции
-    """
-    event = models.InboxEvent(source=source, dedup=dedup_key)
-    if user_id is not None:
-        event.user_id = user_id
-
-    db.add(event)
-    await db.flush()
-    return event
+class DuplicateInboxError(Exception):
+    pass

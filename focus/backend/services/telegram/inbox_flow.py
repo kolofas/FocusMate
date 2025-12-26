@@ -7,12 +7,11 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.exc import IntegrityError
 
 from focus.backend.database.enums import TaskSource, TaskStatus
-from focus.backend.services import (
-    InboxParser,
-    make_dedup,
-    create_task_from_parsed,
-    save_inbox_event,
-)
+from focus.backend.services import InboxParser
+from focus.backend.services.inbox import make_dedup
+from focus.backend.services.tasks import create_task_from_parsed
+from focus.backend.repositories.inbox_repo import InboxRepo
+
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.commands import COMMAND_HANDLERS
 from focus.backend.services.telegram.types import TelegramContext
@@ -55,11 +54,14 @@ async def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     source = TaskSource.TELEGRAM
     dedup_key = make_dedup(text)
     db = ctx.db
+    repo = InboxRepo(db)
 
     try:
-        event = await save_inbox_event(db, source.value, dedup_key)
-        event.user_id = ctx.telegram_user.id
-        await db.flush()
+        await repo.add(
+            source=source.value,
+            dedup_key=dedup_key,
+            user_id=ctx.telegram_user.id,
+        )
     except IntegrityError:
         await db.rollback()
         return {"ok": True, "duplicate": True}
