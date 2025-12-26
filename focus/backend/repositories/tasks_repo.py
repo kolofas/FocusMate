@@ -37,3 +37,12 @@ class TaskRepo:
 
         result = await self.db.execute(stmt)
         return cast(list[models.Task], result.scalars().all())
+
+    async def get_by_id(self, task_id: int) -> models.Task | None:
+        return await self.db.get(models.Task, task_id)
+
+    def add(self, task: models.Task) -> None:
+        self.db.add(task)
+
+    async def delete(self, task: models.Task) -> None:
+        await self.db.delete(task)
