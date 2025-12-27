@@ -1,8 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import select
-
-from focus.backend.database import models
+from focus.backend.repositories.tasks_repo import TaskRepo
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.formatters import format_task_line
 from focus.backend.services.telegram.parsers import parse_task_filters
@@ -20,28 +18,21 @@ async def command_tasks(ctx: TelegramContext, args: Sequence[str]) -> None:
       /tasks 10 planned #work
       /tasks planned all
     """
-    db = ctx.db
     telegram_user = ctx.telegram_user
     chat_id = ctx.chat_id
 
     status, tag, limit, show_all = parse_task_filters(args)
     limit = limit or 5
 
-    stmt = (
-        select(models.Task)
-        .where(models.Task.user_id == telegram_user.id)
-        .order_by(models.Task.created_at.desc())
+    repo = TaskRepo(ctx.db)
+    tasks = await repo.list_user_tasks(
+        user_id=telegram_user.id,
+        status=status,
+        tag=tag,
+        limit=limit,
+        show_all=show_all,
     )
-    if status:
-        stmt = stmt.where(models.Task.status == status)
-    if tag:
-        stmt = stmt.where(models.Task.tags.contains([tag]))
 
-    if not show_all:
-        stmt = stmt.limit(limit)
-
-    result = await db.execute(stmt)
-    tasks = result.scalars().all()
     if not tasks:
         await send_reply(chat_id, "Задач пока нет.")
         return

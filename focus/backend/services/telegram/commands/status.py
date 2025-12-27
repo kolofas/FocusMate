@@ -1,12 +1,11 @@
 from typing import Sequence
 
-
+from focus.backend.repositories.tasks_repo import TaskRepo
 from focus.backend.services.tasks import change_task_status
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.formatters import format_task_line
 from focus.backend.services.telegram.next_actions import suggest_next_action_line
 from focus.backend.services.telegram.parsers import parse_status
-from focus.backend.services.telegram.task_queries import get_user_task
 from focus.backend.services.telegram.types import TelegramContext
 
 
@@ -37,7 +36,9 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
         )
         return
 
-    task = await get_user_task(ctx.db, user_id=user_id, task_id=task_id)
+    repo = TaskRepo(ctx.db)
+    task = await repo.get_user_task(task_id=task_id, user_id=user_id)
+
     if not task:
         await send_reply(
             chat_id, f"Не нашёл задачу с id {task_id}. Попробуй /today или /tasks"
@@ -49,13 +50,6 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
         await send_reply(
             chat_id,
             f"Статус уже {new_status.value}: {format_task_line(task)}\n{await suggest_next_action_line(ctx)}",
-        )
-        return
-
-    if not new_status:
-        await send_reply(
-            chat_id,
-            "Неизвестный статус. Используй: inbox | planned | done | snoozed",
         )
         return
 

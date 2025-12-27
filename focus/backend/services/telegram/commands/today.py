@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from focus.backend.database.enums import TaskStatus
-from focus.backend.services import get_plan_today
+from focus.backend.services.focus import get_plan_today
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.consts import STATUS_EMOJI
 from focus.backend.services.telegram.parsers import parse_today_filters

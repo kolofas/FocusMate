@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from focus.backend.database.enums import TaskStatus
-from focus.backend.services import get_plan_today
+from focus.backend.services.focus import get_plan_today
 from focus.backend.services.telegram.formatters import format_task_line
 from focus.backend.services.telegram.types import TelegramContext
 

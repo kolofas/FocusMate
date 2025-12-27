@@ -23,7 +23,7 @@ class TelegramContext:
     Единая структура, чтобы не таскать 4-5 параметров по всему коду.
     """
 
-    chat_id: Optional[int]
+    chat_id: int
     db: AsyncSession
     telegram_user: models.TelegramUser
     meta: TelegramMeta | None = None

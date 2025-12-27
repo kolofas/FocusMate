@@ -1,4 +1,4 @@
-from typing import cast
+from typing import cast, Optional
 
 from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,3 +46,37 @@ class TaskRepo:
 
     async def delete(self, task: models.Task) -> None:
         await self.db.delete(task)
+
+    async def get_user_task(self, *, task_id: int, user_id: int) -> models.Task | None:
+        stmt = select(models.Task).where(
+            models.Task.id == task_id,
+            models.Task.user_id == user_id,
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
+    async def list_user_tasks(
+        self,
+        *,
+        user_id: int,
+        status: Optional[str],
+        tag: Optional[str],
+        limit: int,
+        show_all: bool,
+    ) -> list[models.Task]:
+        stmt = (
+            select(models.Task)
+            .where(models.Task.user_id == user_id)
+            .order_by(models.Task.created_at.desc())
+        )
+
+        if status:
+            stmt = stmt.where(models.Task.status == status)
+        if tag:
+            stmt = stmt.where(models.Task.tags.contains([tag]))
+
+        if not show_all:
+            stmt = stmt.limit(limit)
+
+        result = await self.db.execute(stmt)
+        return cast(list[models.Task], result.scalars().all())

@@ -1,26 +1,14 @@
 from typing import Sequence
 
-from sqlalchemy import select
 
 from focus.backend.database import models
 from focus.backend.database.enums import TaskStatus
+from focus.backend.repositories.tasks_repo import TaskRepo
 from focus.backend.services.tasks import change_task_status
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.formatters import format_task_line
 from focus.backend.services.telegram.next_actions import suggest_next_action_line
 from focus.backend.services.telegram.types import TelegramContext
-
-
-async def _get_user_task_or_none(
-    ctx: TelegramContext, task_id: int
-) -> models.Task | None:
-    result = await ctx.db.execute(
-        select(models.Task).where(
-            models.Task.id == task_id,
-            models.Task.user_id == ctx.telegram_user.id,
-        )
-    )
-    return result.scalars().first()
 
 
 def _build_done_reply(task: models.Task, old_status: str, next_line: str) -> str:
@@ -42,7 +30,9 @@ async def command_done(ctx: TelegramContext, args: Sequence[str]) -> None:
         return
 
     task_id = int(args[0])
-    task = await _get_user_task_or_none(ctx, task_id)
+
+    repo = TaskRepo(ctx.db)
+    task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
 
     if not task:
         await send_reply(

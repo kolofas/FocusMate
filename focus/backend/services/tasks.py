@@ -1,8 +1,7 @@
-# backend/tasks.py
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import models
-from focus.backend.services import ParsedInbox
+from focus.backend.services.parsing import ParsedInbox
 from focus.backend.database.enums import TaskSource, TaskStatus
 from ..utils.datetime import to_utc
 from ..settings import settings

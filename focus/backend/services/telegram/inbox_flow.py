@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.exc import IntegrityError
 
 from focus.backend.database.enums import TaskSource, TaskStatus
-from focus.backend.services import InboxParser
+from focus.backend.services.parsing import InboxParser
 from focus.backend.services.inbox import make_dedup
 from focus.backend.services.tasks import create_task_from_parsed
 from focus.backend.repositories.inbox_repo import InboxRepo
