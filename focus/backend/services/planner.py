@@ -1,15 +1,13 @@
-# focus/backend/planner.py
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import Optional, Any, Sequence
+from typing import Optional
 
-from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from ..database import models
 from ..database.enums import TaskStatus
+from ..repositories.planner_repo import PlannerRepo
 from ..settings import settings
 
 __all__ = ["score_task", "plan_today"]
@@ -70,53 +68,6 @@ def _deadline_score(deadline: datetime | None) -> int:
     return 0
 
 
-async def _get_or_create_focus_list(
-    db: AsyncSession,
-    target_date: date,
-    *,
-    user_id: Optional[int],
-) -> models.FocusList:
-    stmt = (
-        select(models.FocusList)
-        .options(selectinload(models.FocusList.items))
-        .where(
-            models.FocusList.date == target_date,
-            models.FocusList.user_id.is_(user_id)
-            if user_id is None
-            else models.FocusList.user_id == user_id,
-        )
-        .limit(1)
-    )
-    result = await db.execute(stmt)
-    obj = result.scalars().first()
-    if obj:
-        return obj
-
-    obj = models.FocusList(date=target_date, user_id=user_id)
-    db.add(obj)
-    await db.flush()
-    return obj
-
-
-async def _select_candidates(
-    db: AsyncSession, *, user_id: Optional[int]
-) -> Sequence[Any]:
-    """
-    Берём только задачи этого пользователя.
-    Для системных/ручных без пользователя — user_id IS NULL.
-    """
-    stmt = select(models.Task).where(
-        models.Task.status.in_([TaskStatus.INBOX.value, TaskStatus.PLANNED.value])
-    )
-    if user_id is None:
-        stmt = stmt.where(models.Task.user_id.is_(None))
-    else:
-        stmt = stmt.where(models.Task.user_id == user_id)
-
-    result = await db.execute(stmt)
-    return result.scalars().all()
-
-
 def _rank_key(task: models.Task):
     """
     Сортировка: по убыванию score, затем по возрастанию deadline, затем по возрастанию created_at.
@@ -141,16 +92,13 @@ async def plan_today(
     target_date = for_date or date.today()
     limit = limit or settings.focus_limit
 
-    focus_list = await _get_or_create_focus_list(db, target_date, user_id=user_id)
-    candidates = await _select_candidates(db, user_id=user_id)
+    repo = PlannerRepo(db)
+
+    focus_list = await repo.get_or_create_focus_list(target_date, user_id=user_id)
+    candidates = await repo.list_candidates(user_id=user_id)
+
     ranked = sorted(candidates, key=_rank_key, reverse=True)[:limit]
 
-    # 1) очистка через SQL, НЕ через relationship
-    await db.execute(
-        delete(models.FocusItem).where(models.FocusItem.focus_list_id == focus_list.id)
-    )
-
-    # 2) вставка новых items (тоже без трогания focus_list.items)
     new_items = [
         models.FocusItem(
             focus_list_id=focus_list.id,
@@ -160,7 +108,7 @@ async def plan_today(
         )
         for idx, task in enumerate(ranked, start=1)
     ]
-    db.add_all(new_items)
 
-    await db.flush()
+    await repo.replace_focus_items(focus_list_id=focus_list.id, items=new_items)
+
     return focus_list

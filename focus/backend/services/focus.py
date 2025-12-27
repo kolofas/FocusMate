@@ -3,31 +3,14 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from ..database import models
 from focus.backend.schemas import PlanTodayResponse, PlanTodayResponseItem
 from .planner import plan_today
 
+from ..repositories.focus_repo import FocusRepo
+
 __all__ = ["get_plan_today"]
-
-
-def _base_stmt(today: date, user_id: int | None):
-    return (
-        select(models.FocusList)
-        .options(
-            selectinload(models.FocusList.items).selectinload(models.FocusItem.task)
-        )
-        .where(
-            models.FocusList.date == today,
-            models.FocusList.user_id.is_(None)
-            if user_id is None
-            else models.FocusList.user_id == user_id,
-        )
-        .limit(1)
-    )
 
 
 async def get_plan_today(
@@ -38,18 +21,13 @@ async def get_plan_today(
 ) -> PlanTodayResponse:
     today = date.today()
 
-    stmt = _base_stmt(today, user_id)
+    repo = FocusRepo(db)
 
-    result = await db.execute(stmt)
-    focus_list = result.scalars().first()
+    focus_list = await repo.get_focus_list_with_items(today, user_id=user_id)
 
     if not focus_list and ensure_build:
-        # строим и фиксируем
         await plan_today(db, user_id=user_id, for_date=today)
-
-        # ВАЖНО: перечитываем уже с options(selectinload...)
-        result = await db.execute(stmt)
-        focus_list = result.scalars().first()
+        focus_list = await repo.get_focus_list_with_items(today, user_id=user_id)
 
     items = [
         PlanTodayResponseItem(rank=it.rank, score=it.score, task=it.task)
