@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Optional, Sequence, TypeAlias
+from typing import Awaitable, Callable, Sequence, TypeAlias
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,8 +12,8 @@ from focus.backend.database import models
 class TelegramMeta:
     """Метаданные пользователя из Telegram update"""
 
-    username: Optional[str] = None
-    first_name: Optional[str] = None
+    username: str | None = None
+    first_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,20 +1,25 @@
+from __future__ import annotations
+
 from typing import Sequence, Optional
 
 from focus.backend.database.enums import TaskStatus
 from .consts import _ALLOWED_STATUS
 
 
+def _norm(raw: str) -> str:
+    return raw.strip().lower()
+
+
+_STATUS_BY_VALUE: dict[str, TaskStatus] = {st.value: st for st in TaskStatus}
+
+
 def parse_status(value: str) -> TaskStatus | None:
-    value = value.strip().lower()
-    for st in TaskStatus:
-        if st.value == value:
-            return st
-    return None
+    return _STATUS_BY_VALUE.get(_norm(value))
 
 
 def parse_task_filters(
     args: Sequence[str],
-) -> tuple[Optional[str], Optional[str], Optional[int], bool]:
+) -> tuple[str | None, str | None, int | None, bool]:
     """
     Разбирает аргументы /tasks:
       статус (inbox/planned/done/snoozed),
@@ -29,24 +34,33 @@ def parse_task_filters(
     show_all = False
 
     for raw in args:
-        arg = raw.strip().lower()
+        arg = _norm(raw)
         if not arg:
             continue
+
         if arg == "all":
             show_all = True
-        elif arg.isdigit():
+            continue
+
+        if arg.isdigit():
             value = int(arg)
             if value > 0:
                 limit = value
-        elif arg.startswith("#"):
-            tag = arg.lstrip("#")
-        elif arg in _ALLOWED_STATUS:
+            continue
+
+        if arg.startswith("#"):
+            tag_value = arg[1:].strip()
+            if tag_value:
+                tag = tag_value
+            continue
+
+        if arg in _ALLOWED_STATUS:
             status = arg
 
     return status, tag, limit, show_all
 
 
-def parse_today_filters(args: Sequence[str]) -> tuple[Optional[str], bool]:
+def parse_today_filters(args: Sequence[str]) -> tuple[str | None, bool]:
     """
     Для /today поддерживаем:
       /today                 -> без фильтров, без done
@@ -59,13 +73,14 @@ def parse_today_filters(args: Sequence[str]) -> tuple[Optional[str], bool]:
     include_done = False
 
     for raw in args:
-        argument = raw.strip().lower()
+        argument = _norm(raw)
         if not argument:
             continue
 
+        if argument in "all":
+            include_done = True
+            continue
         if argument in _ALLOWED_STATUS:
             status = argument
-        elif argument == "all":
-            include_done = True
 
     return status, include_done
