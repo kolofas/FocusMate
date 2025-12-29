@@ -10,10 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.core import get_db
 from ..settings import settings
 from ..services.telegram.inbox_flow import try_handle_command, process_inbox_text
-from ..services.telegram.extractors import extract_text_and_chat_id
 from ..services.telegram.api import send_reply
 from ..services.telegram.types import TelegramContext, TelegramMeta
 from ..services.telegram_users import get_or_create_telegram_user
+from ..services.telegram.callbacks import handle_callback
+from ..services.telegram.extractors import extract_callback, extract_text_and_chat_id
+
 
 router = APIRouter()
 log = logging.getLogger("telegram")
@@ -61,6 +63,27 @@ async def telegram_webhook(
 
     if settings.telegram_log_updates:
         log.info("tg.update: %s", update)
+
+    cb_data, cb_chat_id, cb_id, cb_meta = extract_callback(update)
+    if cb_data and cb_chat_id:
+        telegram_user = await get_or_create_telegram_user(
+            db,
+            chat_id=cb_chat_id,
+            username=cb_meta.get("username"),
+            first_name=cb_meta.get("first_name"),
+        )
+        ctx = TelegramContext(
+            chat_id=cb_chat_id,
+            db=db,
+            telegram_user=telegram_user,
+            meta=TelegramMeta(
+                username=cb_meta.get("username"),
+                first_name=cb_meta.get("first_name"),
+            ),
+        )
+
+        handled = await handle_callback(cb_data, ctx, cb_id)
+        return {"ok": True, "callback": True, "handled": handled}
 
     text, chat_id, meta = extract_text_and_chat_id(update)
     if not text:

@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 
 def extract_text_and_chat_id(
@@ -23,3 +23,27 @@ def extract_text_and_chat_id(
     if not text:
         return None, None, meta
     return text, chat_id, meta
+
+
+def extract_callback(
+    update: Dict[str, Any],
+) -> tuple[Optional[str], Optional[int], Optional[str], dict[str, str]]:
+    """
+    Returns: (data, chat_id, callback_query_id, meta)
+    """
+    cq = update.get("callback_query")
+    if not cq:
+        return None, None, None, {}
+
+    data = cq.get("data")
+    msg = cq.get("message") or {}
+    chat = msg.get("chat") or {}
+    chat_id = chat.get("id")
+
+    user = cq.get("from") or {}
+    meta = {
+        "username": user.get("username"),
+        "first_name": user.get("first_name"),
+    }
+
+    return data, chat_id, cq.get("id"), meta

@@ -4,6 +4,10 @@ from focus.backend.database.enums import TaskStatus
 from focus.backend.services.focus import get_plan_today
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.consts import STATUS_EMOJI
+from focus.backend.services.telegram.next_actions import (
+    today_keyboard,
+    suggest_next_action_line,
+)
 from focus.backend.services.telegram.parsers import parse_today_filters
 from focus.backend.services.telegram.types import TelegramContext
 
@@ -34,16 +38,15 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
 
     if not items:
         if status_filter:
-            await send_reply(
-                chat_id,
-                f"В фокусе на сегодня нет задач со статусом {status_filter}"
-                + ("" if not include_done else " (включая done)."),
+            text = f"В фокусе на сегодня нет задач со статусом {status_filter}" + (
+                "" if not include_done else " (включая done)."
             )
         else:
-            await send_reply(chat_id, "На сегодня задач нет 👍")
+            text = "На сегодня задач нет.\n\nПопробуй:\n• ➕ добавить задачу\n• 🧠 собрать план на день"
+        await send_reply(chat_id, text, reply_markup=today_keyboard(has_items=False))
         return
 
-    header = f"Фокус на {plan.date}"
+    header = f"Сегодня • {plan.date}"
     suffix_parts: list[str] = []
     if status_filter:
         suffix_parts.append(status_filter)
@@ -60,6 +63,10 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
         )
 
     lines.append("")
+    lines.append(await suggest_next_action_line(ctx))
+    lines.append("")
     lines.append("Закрыть: /done <id> • Статус: /status <id> planned")
 
-    await send_reply(chat_id, "\n".join(lines))
+    await send_reply(
+        chat_id, "\n".join(lines), reply_markup=today_keyboard(has_items=True)
+    )
