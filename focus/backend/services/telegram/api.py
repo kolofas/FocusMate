@@ -1,6 +1,10 @@
+import logging
+
 from typing import Optional
 import httpx
 from focus.backend.settings import settings
+
+log = logging.getLogger(__name__)
 
 
 async def send_reply(chat_id: Optional[int], text: str) -> None:
@@ -21,5 +25,4 @@ async def send_reply(chat_id: Optional[int], text: str) -> None:
         async with httpx.AsyncClient(timeout=5) as client:
             await client.post(url, json=payload)
     except Exception:
-        # TODO: логировать, но не падать
-        pass
+        log.exception("Failed to send telegram message to chat_id=%s", chat_id)

@@ -1,8 +1,11 @@
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.core import engine, get_db
 
+log = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -30,6 +33,7 @@ async def db_status(db: AsyncSession = Depends(get_db)):
             result = await db.execute(text(f'SELECT COUNT(*) FROM "{table}"'))
             counts[table] = result.scalar() or 0
         except Exception:
+            log.exception("Failed to count table %s", table)
             counts[table] = None
 
     version_result = await db.execute(text("SELECT version()"))

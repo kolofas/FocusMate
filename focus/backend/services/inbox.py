@@ -1,3 +1,4 @@
+import logging
 import hashlib
 from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,7 @@ from focus.backend.schemas import InboxTelegram
 from focus.backend.utils.normalize_text import normalize_text
 from focus.backend.services.parsing import InboxParser
 
+log = logging.getLogger(__name__)
 
 _parser = InboxParser(tz=ZoneInfo("Europe/Amsterdam"))
 
@@ -55,6 +57,7 @@ async def accept_inbox_from_telegram(
         await db.refresh(task)
         return task
     except Exception:
+        log.exception("Failed to accept inbox message")
         await db.rollback()
         raise
 
