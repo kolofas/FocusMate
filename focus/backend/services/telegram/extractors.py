@@ -27,18 +27,19 @@ def extract_text_and_chat_id(
 
 def extract_callback(
     update: Dict[str, Any],
-) -> tuple[Optional[str], Optional[int], Optional[str], dict[str, str]]:
+) -> tuple[str | None, int | None, str | None, int | None, dict[str, str]]:
     """
     Returns: (data, chat_id, callback_query_id, meta)
     """
     cq = update.get("callback_query")
     if not cq:
-        return None, None, None, {}
+        return None, None, None, None, {}
 
     data = cq.get("data")
     msg = cq.get("message") or {}
     chat = msg.get("chat") or {}
     chat_id = chat.get("id")
+    message_id = msg.get("message_id")
 
     user = cq.get("from") or {}
     meta = {
@@ -46,4 +47,4 @@ def extract_callback(
         "first_name": user.get("first_name"),
     }
 
-    return data, chat_id, cq.get("id"), meta
+    return data, chat_id, cq.get("id"), message_id, meta

@@ -64,7 +64,7 @@ async def telegram_webhook(
     if settings.telegram_log_updates:
         log.info("tg.update: %s", update)
 
-    cb_data, cb_chat_id, cb_id, cb_meta = extract_callback(update)
+    cb_data, cb_chat_id, cb_id, cb_message_id, cb_meta = extract_callback(update)
     if cb_data and cb_chat_id:
         telegram_user = await get_or_create_telegram_user(
             db,
@@ -82,7 +82,8 @@ async def telegram_webhook(
             ),
         )
 
-        handled = await handle_callback(cb_data, ctx, cb_id)
+        log.info("tg.callback: data=%s chat_id=%s", cb_data, cb_chat_id)
+        handled = await handle_callback(cb_data, ctx, cb_id, cb_message_id)
         return {"ok": True, "callback": True, "handled": handled}
 
     text, chat_id, meta = extract_text_and_chat_id(update)

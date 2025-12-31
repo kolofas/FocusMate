@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Any
 
 from focus.backend.database.enums import TaskStatus
 from focus.backend.services.focus import get_plan_today
@@ -12,18 +12,11 @@ from focus.backend.services.telegram.parsers import parse_today_filters
 from focus.backend.services.telegram.types import TelegramContext
 
 
-async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
-    """
-    /today [status] [all] — фокус-лист на сегодня для пользователя.
-    Примеры:
-      /today
-      /today planned
-      /today planned all
-      /today all
-    """
+async def render_today(
+    ctx: TelegramContext, args: Sequence[str]
+) -> tuple[str, dict[str, Any]]:
     db = ctx.db
     telegram_user = ctx.telegram_user
-    chat_id = ctx.chat_id
 
     status_filter, include_done = parse_today_filters(args)
 
@@ -43,8 +36,7 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
             )
         else:
             text = "На сегодня задач нет.\n\nПопробуй:\n• ➕ добавить задачу\n• 🧠 собрать план на день"
-        await send_reply(chat_id, text, reply_markup=today_keyboard(has_items=False))
-        return
+        return text, today_keyboard(has_items=False)
 
     header = f"Сегодня • {plan.date}"
     suffix_parts: list[str] = []
@@ -67,6 +59,17 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
     lines.append("")
     lines.append("Закрыть: /done <id> • Статус: /status <id> planned")
 
-    await send_reply(
-        chat_id, "\n".join(lines), reply_markup=today_keyboard(has_items=True)
-    )
+    return "\n".join(lines), today_keyboard(has_items=True)
+
+
+async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
+    """
+    /today [status] [all] — фокус-лист на сегодня для пользователя.
+    Примеры:
+      /today
+      /today planned
+      /today planned all
+      /today all
+    """
+    text, kb = await render_today(ctx, args)
+    await send_reply(ctx.chat_id, text, reply_markup=kb)
