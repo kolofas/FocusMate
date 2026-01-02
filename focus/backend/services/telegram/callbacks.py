@@ -1,6 +1,10 @@
 from __future__ import annotations
 import logging
 
+from focus.backend.database.enums import TaskStatus
+from focus.backend.repositories.tasks_repo import TaskRepo
+from focus.backend.services.tasks import change_task_status
+from focus.backend.services.telegram.commands.done_pick import render_done_pick
 from focus.backend.services.telegram.types import TelegramContext
 from focus.backend.services.telegram.api import (
     answer_callback_query,
@@ -40,6 +44,45 @@ async def handle_callback(
             "Ок. Просто напиши текст задачи следующим сообщением — я добавлю в инбокс.\n\n"
             "Пример: `Купить воду`",
             parse_mode="Markdown",
+        )
+        return True
+
+    if data == "today_done_pick":
+        text, kb = await render_done_pick(ctx)
+        await edit_message_text(ctx.chat_id, message_id, text, reply_markup=kb)
+        return True
+
+    if data.startswith("done:"):
+        try:
+            task_id = int(data.split(":", 1)[1])
+        except ValueError:
+            await answer_callback_query(
+                callback_query_id, text="Некорректный id", show_alert=True
+            )
+            return True
+
+        repo = TaskRepo(ctx.db)
+        task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
+        if not task:
+            await answer_callback_query(
+                callback_query_id, text=f"Не нашёл задачу id={task_id}", show_alert=True
+            )
+            return True
+
+        if task.status == TaskStatus.DONE.value:
+            await answer_callback_query(
+                callback_query_id, text="Уже закрыта ✅", show_alert=False
+            )
+            return True
+
+        await change_task_status(task, TaskStatus.DONE)
+        await ctx.db.commit()
+
+        text, kb = await render_today(ctx, args=[])
+        await edit_message_text(ctx.chat_id, message_id, text, reply_markup=kb)
+
+        await answer_callback_query(
+            callback_query_id, text="Готово ✅", show_alert=False
         )
         return True
 
