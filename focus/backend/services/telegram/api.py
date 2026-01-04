@@ -80,13 +80,13 @@ async def edit_message_text(
     parse_mode: Optional[str] = None,
     reply_markup: Optional[dict[str, Any]] = None,
     disable_web_page_preview: bool = True,
-) -> None:
+) -> bool:
     if not chat_id or not message_id:
-        return
+        return False
 
     token = settings.telegram_bot_token
     if not token:
-        return
+        return False
 
     url = f"https://api.telegram.org/bot{token}/editMessageText"
     payload: dict[str, Any] = {
@@ -103,11 +103,23 @@ async def edit_message_text(
     try:
         async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.post(url, json=payload)
+
+            if resp.status_code == 400:
+                # Важно увидеть причину всех 400, не только "not modified"
+                if "message is not modified" in resp.text:
+                    return False
+                log.warning("editMessageText 400: %s", resp.text)
+                return False
+
             if resp.status_code >= 400:
                 log.error("editMessageText failed: %s %s", resp.status_code, resp.text)
+                return False
+
+            return True
     except Exception:
         log.exception(
             "Failed to edit telegram message chat_id=%s message_id=%s",
             chat_id,
             message_id,
         )
+        return False

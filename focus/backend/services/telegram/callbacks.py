@@ -1,18 +1,20 @@
 from __future__ import annotations
 import logging
 
-from focus.backend.database.enums import TaskStatus
-from focus.backend.repositories.tasks_repo import TaskRepo
-from focus.backend.services.tasks import change_task_status
-from focus.backend.services.telegram.commands.done_pick import render_done_pick
 from focus.backend.services.telegram.types import TelegramContext
 from focus.backend.services.telegram.api import (
     answer_callback_query,
-    send_reply,
-    edit_message_text,
 )
-from focus.backend.services.telegram.commands.today import render_today
-from focus.backend.services.telegram.commands.tasks import command_tasks
+from focus.backend.services.telegram.callback_handlers.today import (
+    handle_today_refresh_or_replan,
+)
+from focus.backend.services.telegram.callback_handlers.tasks import handle_tasks_planned
+from focus.backend.services.telegram.callback_handlers.add import handle_task_add
+from focus.backend.services.telegram.callback_handlers.done import (
+    handle_today_done_pick,
+    handle_done_task,
+)
+
 
 log = logging.getLogger(__name__)
 
@@ -26,30 +28,19 @@ async def handle_callback(
     """
     Returns True if handled.
     """
-    await answer_callback_query(callback_query_id)
-
     if data in ("today_refresh", "today_replan"):
-        text, kb = await render_today(ctx, args=[])
-        log.info("tg.edit: chat_id=%s message_id=%s", ctx.chat_id, message_id)
-        await edit_message_text(ctx.chat_id, message_id, text, reply_markup=kb)
-        return True
-
-    if data == "tasks_planned":
-        await command_tasks(ctx, args=["planned"])
-        return True
-
-    if data == "task_add":
-        await send_reply(
-            ctx.chat_id,
-            "Ок. Просто напиши текст задачи следующим сообщением — я добавлю в инбокс.\n\n"
-            "Пример: `Купить воду`",
-            parse_mode="Markdown",
-        )
+        changed = await handle_today_refresh_or_replan(ctx, message_id=message_id)
+        if not changed:
+            msg = "Без изменений" if data == "today_refresh" else "План уже оптимален"
+            await answer_callback_query(callback_query_id, text=msg)
+        else:
+            await answer_callback_query(callback_query_id)
         return True
 
     if data == "today_done_pick":
-        text, kb = await render_done_pick(ctx)
-        await edit_message_text(ctx.chat_id, message_id, text, reply_markup=kb)
+        await handle_today_done_pick(
+            ctx, callback_query_id=callback_query_id, message_id=message_id
+        )
         return True
 
     if data.startswith("done:"):
@@ -61,29 +52,22 @@ async def handle_callback(
             )
             return True
 
-        repo = TaskRepo(ctx.db)
-        task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
-        if not task:
-            await answer_callback_query(
-                callback_query_id, text=f"Не нашёл задачу id={task_id}", show_alert=True
-            )
-            return True
-
-        if task.status == TaskStatus.DONE.value:
-            await answer_callback_query(
-                callback_query_id, text="Уже закрыта ✅", show_alert=False
-            )
-            return True
-
-        await change_task_status(task, TaskStatus.DONE)
-        await ctx.db.commit()
-
-        text, kb = await render_today(ctx, args=[])
-        await edit_message_text(ctx.chat_id, message_id, text, reply_markup=kb)
-
-        await answer_callback_query(
-            callback_query_id, text="Готово ✅", show_alert=False
+        await handle_done_task(
+            ctx,
+            task_id=task_id,
+            callback_query_id=callback_query_id,
+            message_id=message_id,
         )
+        return True
+
+    if data == "tasks_planned":
+        await handle_tasks_planned(ctx)
+        await answer_callback_query(callback_query_id)
+        return True
+
+    if data == "task_add":
+        await handle_task_add(ctx)
+        await answer_callback_query(callback_query_id)
         return True
 
     return False
