@@ -18,7 +18,10 @@ import focus.backend.database.models as models
 
 config = context.config
 # берём URL из настроек приложения
-config.set_main_option("sqlalchemy.url", settings.database_url)
+db_url = settings.database_url
+if "+asyncpg" in db_url:
+    db_url = db_url.replace("+asyncpg", "+psycopg2")
+config.set_main_option("sqlalchemy.url", db_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
