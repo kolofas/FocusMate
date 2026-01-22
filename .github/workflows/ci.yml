@@ -24,8 +24,8 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
-      env:
-        DATABASE_URL: postgresql+asyncpg://ronaldo:cristiano@localhost:5432/focusmate_test
+    env:
+      DATABASE_URL: postgresql+asyncpg://ronaldo:cristiano@localhost:5432/focusmate_test
 
 
     steps:
