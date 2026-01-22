@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     telegram_mode: str = "webhook"  # "webhook" | "polling"
     telegram_log_updates: bool = True
 
-    model_config = SettingsConfigDict(env_file=str(ENV_PATH / ".env"), extra="ignore")
+    model_config = SettingsConfigDict(env_file=ENV_PATH, extra="ignore")
 
 
 settings = Settings()
