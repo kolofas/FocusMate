@@ -3,6 +3,7 @@ from pathlib import Path
 
 # ищем .env, поднимаясь от файла вверх
 ENV_PATH = next(p for p in Path(__file__).resolve().parents if (p / ".env").exists())
+ENV_FILE = str(ENV_PATH / ".env") if ENV_PATH else None
 
 
 class Settings(BaseSettings):
