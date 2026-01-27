@@ -75,3 +75,60 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:main
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            
+    deploy:
+      runs-on: ubuntu-latest
+      needs: docker-push
+      if: github.ref == 'refs/heads/main'
+
+      steps:
+        - name: Deploy to server via SSH (pull + up + healthcheck + rollback)
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.DEPLOY_HOST }}
+            username: ${{ secrets.DEPLOY_USER }}
+            key: ${{ secrets.DEPLOY_SSH_KEY }}
+            script_stop: true
+            script: |
+              set -Eeuo pipefail
+  
+              cd "${{ secrets.DEPLOY_PATH }}"
+  
+              echo "==> Current compose status"
+              docker compose ps || true
+  
+              PREV_IMAGE="$(docker inspect "$(docker compose ps -q app)" --format '{{.Image}}')"
+              echo "==> Previous image id: ${PREV_IMAGE}"
+  
+              rollback() {
+                echo "==> HEALTHCHECK FAILED. Rolling back..."
+                docker tag "${PREV_IMAGE}" ghcr.io/kolofas/focusmate:main
+                docker compose up -d
+                docker compose ps
+                echo "==> Rollback complete"
+              }
+              trap rollback ERR
+  
+              echo "==> Pull new image"
+              docker compose pull app
+  
+              echo "==> Recreate app"
+              docker compose up -d
+  
+              echo "==> Waiting for health..."
+              for i in {1..30}; do
+                if curl -fsS http://127.0.0.1:8000/health/ping >/dev/null; then
+                  echo "ping ok"
+                  break
+                fi
+                sleep 2
+              done
+  
+              echo "==> Health ping"
+              curl -fsS http://127.0.0.1:8000/health/ping >/dev/null
+  
+              echo "==> Health db"
+              curl -fsS http://127.0.0.1:8000/health/db >/dev/null
+  
+              echo "==> Deploy OK"
+              docker compose ps
