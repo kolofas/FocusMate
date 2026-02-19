@@ -14,6 +14,12 @@ from focus.backend.services.telegram.callback_handlers.done import (
     handle_today_done_pick,
     handle_done_task,
 )
+from focus.backend.services.telegram.callback_handlers.delete import (
+    handle_today_delete_pick,
+    handle_delete_confirm,
+    handle_delete_yes,
+    handle_delete_no,
+)
 
 
 log = logging.getLogger(__name__)
@@ -68,6 +74,42 @@ async def handle_callback(
     if data == "task_add":
         await handle_task_add(ctx)
         await answer_callback_query(callback_query_id)
+        return True
+    
+    if data == "today_delete_pick":
+        await handle_today_delete_pick(
+            ctx, callback_query_id=callback_query_id, message_id=message_id
+        )
+        return True
+
+    if data.startswith("del:"):
+        try:
+            task_id = int(data.split(":", 1)[1])
+        except ValueError:
+            await answer_callback_query(callback_query_id, text="Некорректный id", show_alert=True)
+            return True
+
+        await handle_delete_confirm(
+            ctx, task_id=task_id, callback_query_id=callback_query_id, message_id=message_id
+        )
+        return True
+
+    if data.startswith("del_yes:"):
+        try:
+            task_id = int(data.split(":", 1)[1])
+        except ValueError:
+            await answer_callback_query(callback_query_id, text="Некорректный id", show_alert=True)
+            return True
+
+        await handle_delete_yes(
+            ctx, task_id=task_id, callback_query_id=callback_query_id, message_id=message_id
+        )
+        return True
+
+    if data.startswith("del_no:"):
+        await handle_delete_no(
+            ctx, callback_query_id=callback_query_id, message_id=message_id
+        )
         return True
 
     return False

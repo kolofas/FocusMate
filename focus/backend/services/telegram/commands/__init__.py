@@ -4,6 +4,7 @@ from .today import command_today
 from .tasks import command_tasks
 from .done import command_done
 from .status import command_status
+from .delete import command_delete
 
 COMMAND_HANDLERS: dict[str, CommandHandler] = {
     "/today": command_today,
@@ -15,4 +16,6 @@ COMMAND_HANDLERS: dict[str, CommandHandler] = {
     "/status": command_status,
     "/d": command_done,
     "/s": command_status,
+    "/del": command_delete,
+    "/rm": command_delete,
 }

@@ -1,12 +1,13 @@
 .PHONY: run test lint fmt migrate heads
-
+SHELL := /usr/bin/bash
 ENV ?= .env
 
 run:
 	uvicorn focus.backend.app:app --reload
 
 test:
-	pytest -q
+	set -a; source ./$(ENV); set +a; pytest -q
+# 	pytest -q
 
 lint:
 	ruff check .
