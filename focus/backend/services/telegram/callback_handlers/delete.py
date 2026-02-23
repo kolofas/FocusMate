@@ -28,7 +28,9 @@ async def handle_delete_confirm(
     repo = TaskRepo(ctx.db)
     task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
     if not task:
-        await answer_callback_query(callback_query_id, text="Не нашёл задачу", show_alert=True)
+        await answer_callback_query(
+            callback_query_id, text="Не нашёл задачу", show_alert=True
+        )
         return
 
     text = f"Точно удалить?\n🗑️ [id:{task.id}] {task.title}"
@@ -56,7 +58,9 @@ async def handle_delete_yes(
     repo = TaskRepo(ctx.db)
     task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
     if not task:
-        await answer_callback_query(callback_query_id, text="Уже удалена/не найдена", show_alert=True)
+        await answer_callback_query(
+            callback_query_id, text="Уже удалена/не найдена", show_alert=True
+        )
         return
 
     await repo.delete(task)

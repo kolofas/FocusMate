@@ -7,7 +7,9 @@ from focus.backend.services.telegram.formatters import format_task_line
 from focus.backend.services.telegram.types import TelegramContext
 
 
-async def render_delete_pick(ctx: TelegramContext, limit: int = 10) -> tuple[str, dict[str, Any]]:
+async def render_delete_pick(
+    ctx: TelegramContext, limit: int = 10
+) -> tuple[str, dict[str, Any]]:
     repo = TaskRepo(ctx.db)
     tasks = await repo.list_user_tasks(
         user_id=ctx.telegram_user.id,
@@ -19,7 +21,9 @@ async def render_delete_pick(ctx: TelegramContext, limit: int = 10) -> tuple[str
 
     if not tasks:
         text = "Задач нет — удалять нечего 🙂"
-        kb = {"inline_keyboard": [[{"text": "⬅️ Назад", "callback_data": "today_refresh"}]]}
+        kb = {
+            "inline_keyboard": [[{"text": "⬅️ Назад", "callback_data": "today_refresh"}]]
+        }
         return text, kb
 
     lines = ["Выбери задачу для удаления:"]

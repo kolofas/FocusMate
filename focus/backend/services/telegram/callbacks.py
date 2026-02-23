@@ -75,7 +75,7 @@ async def handle_callback(
         await handle_task_add(ctx)
         await answer_callback_query(callback_query_id)
         return True
-    
+
     if data == "today_delete_pick":
         await handle_today_delete_pick(
             ctx, callback_query_id=callback_query_id, message_id=message_id
@@ -86,11 +86,16 @@ async def handle_callback(
         try:
             task_id = int(data.split(":", 1)[1])
         except ValueError:
-            await answer_callback_query(callback_query_id, text="Некорректный id", show_alert=True)
+            await answer_callback_query(
+                callback_query_id, text="Некорректный id", show_alert=True
+            )
             return True
 
         await handle_delete_confirm(
-            ctx, task_id=task_id, callback_query_id=callback_query_id, message_id=message_id
+            ctx,
+            task_id=task_id,
+            callback_query_id=callback_query_id,
+            message_id=message_id,
         )
         return True
 
@@ -98,11 +103,16 @@ async def handle_callback(
         try:
             task_id = int(data.split(":", 1)[1])
         except ValueError:
-            await answer_callback_query(callback_query_id, text="Некорректный id", show_alert=True)
+            await answer_callback_query(
+                callback_query_id, text="Некорректный id", show_alert=True
+            )
             return True
 
         await handle_delete_yes(
-            ctx, task_id=task_id, callback_query_id=callback_query_id, message_id=message_id
+            ctx,
+            task_id=task_id,
+            callback_query_id=callback_query_id,
+            message_id=message_id,
         )
         return True
 

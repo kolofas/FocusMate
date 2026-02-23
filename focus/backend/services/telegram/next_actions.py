@@ -34,8 +34,11 @@ def today_keyboard(*, has_items: bool) -> dict[str, Any]:
     if has_items:
         return _inline_keyboard(
             [
-                [("✅ Done…", "today_done_pick"), ("🗑️ Delete…", "today_delete_pick"),
-                 ("📋 Обновить", "today_refresh")],
+                [
+                    ("✅ Done…", "today_done_pick"),
+                    ("🗑️ Delete…", "today_delete_pick"),
+                    ("📋 Обновить", "today_refresh"),
+                ],
                 [("➕ Добавить", "task_add"), ("🧠 Replan", "today_replan")],
                 [("📦 Planned", "tasks_planned")],
             ]

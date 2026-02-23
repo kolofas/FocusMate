@@ -6,6 +6,8 @@ from focus.backend.settings import settings
 
 log = logging.getLogger(__name__)
 
+TELEGRAM_API_BASE = "https://api.telegram.org/bot{token}"
+
 
 async def send_reply(
     chat_id: Optional[int],
@@ -14,9 +16,9 @@ async def send_reply(
     parse_mode: Optional[str] = None,
     reply_markup: Optional[dict[str, Any]] = None,
     disable_web_page_preview: bool = True,
-) -> None:
+) -> Optional[int]:
     """
-    Отправляет ответ пользователю.
+    Отправляет ответ пользователю и возвращает message_id отправленного сообщения.
     Ошибки доставки не пробрасываем — вебхук важнее.
     """
     if not chat_id:
@@ -24,9 +26,9 @@ async def send_reply(
 
     token = settings.telegram_bot_token
     if not token:
-        return
+        return None
 
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    url = f"{TELEGRAM_API_BASE.format(token=token)}/sendMessage"
     payload: dict[str, Any] = {
         "chat_id": chat_id,
         "text": text,
@@ -39,9 +41,27 @@ async def send_reply(
 
     try:
         async with httpx.AsyncClient(timeout=5) as client:
-            await client.post(url, json=payload)
+            resp = await client.post(url, json=payload)
+
+            if resp.status_code >= 400:
+                log.error("sendMessage failed: %s %s", resp.status_code, resp.text)
+                return None
+
+            data = resp.json()
+            if not data.get("ok"):
+                log.error("sendMessage returned ok=false: %s", data)
+                return None
+
+            result = data.get("result") or {}
+            message_id = result.get("message_id")
+            if isinstance(message_id, int):
+                return message_id
+
+            log.warning("sendMessage: no message_id in result: %s", result)
+            return None
     except Exception:
         log.exception("Failed to send telegram message to chat_id=%s", chat_id)
+        return None
 
 
 async def answer_callback_query(
@@ -57,7 +77,7 @@ async def answer_callback_query(
     if not token:
         return
 
-    url = f"https://api.telegram.org/bot{token}/answerCallbackQuery"
+    url = f"{TELEGRAM_API_BASE.format(token=token)}/answerCallbackQuery"
     payload: dict[str, Any] = {
         "callback_query_id": callback_query_id,
         "show_alert": show_alert,
@@ -67,7 +87,11 @@ async def answer_callback_query(
 
     try:
         async with httpx.AsyncClient(timeout=5) as client:
-            await client.post(url, json=payload)
+            resp = await client.post(url, json=payload)
+            if resp.status_code >= 400:
+                log.error(
+                    "answerCallbackQuery failed: %s %s", resp.status_code, resp.text
+                )
     except Exception:
         log.exception("Failed to answer callback_query_id=%s", callback_query_id)
 
@@ -88,7 +112,7 @@ async def edit_message_text(
     if not token:
         return False
 
-    url = f"https://api.telegram.org/bot{token}/editMessageText"
+    url = f"{TELEGRAM_API_BASE.format(token=token)}/editMessageText"
     payload: dict[str, Any] = {
         "chat_id": chat_id,
         "message_id": message_id,
@@ -115,6 +139,11 @@ async def edit_message_text(
                 log.error("editMessageText failed: %s %s", resp.status_code, resp.text)
                 return False
 
+            data = resp.json()
+            if not data.get("ok"):
+                log.error("editMessageText returned ok=false: %s", data)
+                return False
+
             return True
     except Exception:
         log.exception(
@@ -123,3 +152,40 @@ async def edit_message_text(
             message_id,
         )
         return False
+
+
+async def send_or_edit(
+    chat_id: Optional[int],
+    message_id: Optional[int],
+    text: str,
+    *,
+    parse_mode: Optional[str] = None,
+    reply_markup: Optional[dict[str, Any]] = None,
+    disable_web_page_preview: bool = True,
+) -> Optional[int]:
+    """
+    Универсальный ответ:
+    - если message_id есть и edit прошел - возвращаем message_id
+    - иначе отправляем новое сообщение и возвращаем новый message_id
+    """
+    edited = False
+    if chat_id and message_id:
+        edited = await edit_message_text(
+            chat_id,
+            message_id,
+            text,
+            parse_mode=parse_mode,
+            reply_markup=reply_markup,
+            disable_web_page_preview=disable_web_page_preview,
+        )
+        if edited:
+            return message_id
+
+    # fallback: отправляем новое сообщение
+    return await send_reply(
+        chat_id,
+        text,
+        parse_mode=parse_mode,
+        reply_markup=reply_markup,
+        disable_web_page_preview=disable_web_page_preview,
+    )

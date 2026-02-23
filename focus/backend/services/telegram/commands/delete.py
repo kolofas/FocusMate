@@ -17,19 +17,19 @@ async def command_delete(ctx: TelegramContext, args: Sequence[str]) -> None:
     if not args:
         await send_reply(ctx.chat_id, "Укажите id. Пример /del 12")
         return
-    
+
     try:
         task_id = int(args[0])
     except ValueError:
         await send_reply(ctx.chat_id, "Некорректный id. Пример: /del 12")
         return
-    
+
     repo = TaskRepo(ctx.db)
     task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
     if not task:
         await send_reply(ctx.chat_id, f"Не нашел зачу id={task_id}")
         return
-    
+
     await repo.delete(task)
     await ctx.db.commit()
 

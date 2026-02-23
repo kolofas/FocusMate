@@ -2,7 +2,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
 # ищем .env, поднимаясь от файла вверх
-ENV_PATH = next((p for p in Path(__file__).resolve().parents if (p / ".env").exists()), None)
+ENV_PATH = next(
+    (p for p in Path(__file__).resolve().parents if (p / ".env").exists()), None
+)
 ENV_FILE = str(ENV_PATH / ".env") if ENV_PATH else None
 
 
