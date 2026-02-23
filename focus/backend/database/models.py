@@ -140,3 +140,4 @@ class TelegramUser(Base):
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    screen_message_id = Column(Integer, nullable=True)
