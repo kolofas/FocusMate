@@ -2,7 +2,7 @@ from typing import Sequence, Any
 
 from focus.backend.database.enums import TaskStatus
 from focus.backend.services.focus import get_plan_today
-from focus.backend.services.telegram.api import send_reply
+from focus.backend.services.telegram.api import send_or_edit
 from focus.backend.services.telegram.consts import STATUS_EMOJI
 from focus.backend.services.telegram.next_actions import (
     today_keyboard,
@@ -72,4 +72,15 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
       /today all
     """
     text, kb = await render_today(ctx, args)
-    await send_reply(ctx.chat_id, text, reply_markup=kb)
+
+    telegram_user = ctx.telegram_user
+    new_message_id = await send_or_edit(
+        ctx.chat_id,
+        telegram_user.screen_message_id,
+        text,
+        reply_markup=kb,
+    )
+
+    if new_message_id and new_message_id != telegram_user.screen_message_id:
+        telegram_user.screen_message_id = new_message_id
+        await ctx.db.flush()
