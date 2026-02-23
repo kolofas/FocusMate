@@ -93,10 +93,13 @@ C — Planner-центр
 # 5️⃣ План текущей недели
 
 Главный фокус недели:
--
-
+- UX-стабилизация
 Конкретные задачи:
-1.
+1. аудит sendMessage vs editMessageText
+    Обновить send_reply → возвращает message_id
+    Добавить хранение screen_message_id (модель + миграция + сервис)
+    Переписать /today на send_or_edit + save
+    Перевести /done, /status, /del на refresh today screen
 2.
 3.
 4.

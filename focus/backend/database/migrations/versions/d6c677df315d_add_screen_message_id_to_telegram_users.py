@@ -16,7 +16,10 @@ branch_labels = None
 depends_on = None
 
 def upgrade() -> None:
-    pass
+    op.add_column(
+        "telegram_users",
+        sa.Column("screen_message_id", sa.Integer(), nullable=True)
+    )
 
 def downgrade() -> None:
-    pass
+    op.drop_column("telegram_users", "screen_message_id")
