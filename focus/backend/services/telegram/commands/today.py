@@ -83,4 +83,4 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
 
     if new_message_id and new_message_id != telegram_user.screen_message_id:
         telegram_user.screen_message_id = new_message_id
-        await ctx.db.flush()
+        await ctx.db.commit()
