@@ -22,4 +22,4 @@ async def refresh_today_screen(ctx: TelegramContext) -> None:
 
     if new_message_id and new_message_id != tg_user.screen_message_id:
         tg_user.screen_message_id = new_message_id
-        await ctx.db.flush()
+        await ctx.db.commit()
