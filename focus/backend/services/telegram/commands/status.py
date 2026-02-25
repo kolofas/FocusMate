@@ -3,6 +3,7 @@ from typing import Sequence
 from focus.backend.repositories.tasks_repo import TaskRepo
 from focus.backend.services.tasks import change_task_status
 from focus.backend.services.telegram.api import send_reply
+from focus.backend.services.telegram.screens.today_screen import refresh_today_screen
 from focus.backend.services.telegram.formatters import format_task_line
 from focus.backend.services.telegram.next_actions import suggest_next_action_line
 from focus.backend.services.telegram.parsers import parse_status
@@ -55,15 +56,5 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
 
     await change_task_status(task, new_status)
     await ctx.db.commit()
-    await ctx.db.refresh(task)
 
-    await send_reply(
-        chat_id,
-        "\n".join(
-            [
-                f"Обновил: {format_task_line(task)}",
-                f"Было: {before} → стало: {task.status}",
-                await suggest_next_action_line(ctx),
-            ]
-        ),
-    )
+    await refresh_today_screen(ctx)

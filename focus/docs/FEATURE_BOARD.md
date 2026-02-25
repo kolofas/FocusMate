@@ -96,10 +96,10 @@ C — Planner-центр
 - UX-стабилизация
 Конкретные задачи:
 1. аудит sendMessage vs editMessageText
-    Обновить send_reply → возвращает message_id
-    Добавить хранение screen_message_id (модель + миграция + сервис)
-    Переписать /today на send_or_edit + save
-    Перевести /done, /status, /del на refresh today screen
+    [done] Обновить send_reply → возвращает message_id
+    [done] Добавить хранение screen_message_id (модель + миграция + сервис)
+    [done] Переписать /today на send_or_edit + save
+    Перевести /done, /status, /del на refresh today screen 
 2.
 3.
 4.
@@ -109,7 +109,11 @@ C — Planner-центр
 
 # 6️⃣ Done log
 
-- YYYY-MM-DD —
+- 2026-02-23 —
+    Добавили send_or_edit (edit с fallback на send).
+    Научили бот редактировать экран Today вместо спама.
+    Протащили хранение screen_message_id в telegram_users и прогнали миграцию на сервере.
+    Проверили по логам: все действия Today работают через edit одного message_id (1221).
 - YYYY-MM-DD —
 
 ---
@@ -120,3 +124,4 @@ C — Planner-центр
 2. Не более 5 задач в активной неделе.
 3. После завершения задачи — фиксировать в Done log.
 4. Новые идеи добавлять в P3, а не в текущую неделю.
+
