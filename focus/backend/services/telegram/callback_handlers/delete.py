@@ -3,7 +3,7 @@ from __future__ import annotations
 from focus.backend.repositories.tasks_repo import TaskRepo
 from focus.backend.services.telegram.api import answer_callback_query, edit_message_text
 from focus.backend.services.telegram.commands.delete_pick import render_delete_pick
-from focus.backend.services.telegram.commands.today import render_today
+from focus.backend.services.telegram.screens.today_screen import render_today
 from focus.backend.services.telegram.types import TelegramContext
 
 

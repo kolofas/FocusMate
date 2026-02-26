@@ -4,7 +4,7 @@ from focus.backend.database.enums import TaskStatus
 from focus.backend.repositories.tasks_repo import TaskRepo
 from focus.backend.services.tasks import change_task_status
 from focus.backend.services.telegram.api import answer_callback_query, edit_message_text
-from focus.backend.services.telegram.commands.today import render_today
+from focus.backend.services.telegram.screens.today_screen import render_today
 from focus.backend.services.telegram.commands.done_pick import render_done_pick
 from focus.backend.services.telegram.types import TelegramContext
 

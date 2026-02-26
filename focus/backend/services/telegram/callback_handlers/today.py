@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from focus.backend.services.telegram.api import edit_message_text
-from focus.backend.services.telegram.commands.today import render_today
+from focus.backend.services.telegram.screens.today_screen import render_today
 from focus.backend.services.telegram.types import TelegramContext
 
 log = logging.getLogger(__name__)
