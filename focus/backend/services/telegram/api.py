@@ -129,9 +129,8 @@ async def edit_message_text(
             resp = await client.post(url, json=payload)
 
             if resp.status_code == 400:
-                # Важно увидеть причину всех 400, не только "not modified"
                 if "message is not modified" in resp.text:
-                    return False
+                    return True
                 log.warning("editMessageText 400: %s", resp.text)
                 return False
 
