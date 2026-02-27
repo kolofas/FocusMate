@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Sequence, Any
 
 from focus.backend.database.enums import TaskStatus
@@ -71,9 +72,12 @@ async def refresh_today_screen(ctx: TelegramContext, args: Sequence[str] = ()) -
     text, kb = await render_today(ctx, args=list(args))
     tg_user = ctx.telegram_user
 
+    force_new = "refresh" in args
+    message_id = None if force_new else tg_user.screen_message_id
+
     new_message_id = await send_or_edit(
         ctx.chat_id,
-        tg_user.screen_message_id,
+        message_id,
         text,
         reply_markup=kb,
     )
