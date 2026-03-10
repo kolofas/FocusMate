@@ -56,17 +56,15 @@ async def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
     db = ctx.db
     repo = InboxRepo(db)
 
-    try:
-        await repo.add(
+    if await repo.exists_recent(
             source=source.value,
             dedup_key=dedup_key,
             user_id=ctx.telegram_user.id,
-        )
-    except IntegrityError:
-        await db.rollback()
-        return {"ok": True, "duplicate": True}
+        ):
+            return {"ok": True, "duplicate": True}
 
     parsed = _parser.parse(text)
+
     task = await create_task_from_parsed(
         db,
         parsed,
@@ -75,7 +73,13 @@ async def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
         raw_text=text,
     )
     task.user_id = ctx.telegram_user.id
-
+    
+    await repo.add(
+            source=source.value,
+            dedup_key=dedup_key,
+            user_id=ctx.telegram_user.id,
+        )
+    
     await db.commit()
     await db.refresh(task)
 
