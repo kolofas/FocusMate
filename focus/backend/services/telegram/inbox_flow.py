@@ -4,13 +4,10 @@ from typing import Any
 
 from zoneinfo import ZoneInfo
 
-from sqlalchemy.exc import IntegrityError
 
 from focus.backend.database.enums import TaskSource, TaskStatus
 from focus.backend.services.parsing import InboxParser
-from focus.backend.services.inbox import make_dedup
 from focus.backend.services.tasks import create_task_from_parsed
-from focus.backend.repositories.inbox_repo import InboxRepo
 
 from focus.backend.services.telegram.api import send_reply
 from focus.backend.services.telegram.commands import COMMAND_HANDLERS
@@ -52,16 +49,7 @@ async def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
       - commit.
     """
     source = TaskSource.TELEGRAM
-    dedup_key = make_dedup(text)
     db = ctx.db
-    repo = InboxRepo(db)
-
-    if await repo.exists_recent(
-            source=source.value,
-            dedup_key=dedup_key,
-            user_id=ctx.telegram_user.id,
-        ):
-            return {"ok": True, "duplicate": True}
 
     parsed = _parser.parse(text)
 
@@ -72,15 +60,26 @@ async def process_inbox_text(text: str, ctx: TelegramContext) -> dict[str, Any]:
         status=TaskStatus.INBOX,
         raw_text=text,
     )
+
     task.user_id = ctx.telegram_user.id
-    
-    await repo.add(
-            source=source.value,
-            dedup_key=dedup_key,
-            user_id=ctx.telegram_user.id,
-        )
-    
+
     await db.commit()
     await db.refresh(task)
 
     return {"ok": True, "duplicate": False, "task_id": task.id, "title": task.title}
+
+    # dedup_key = make_dedup(text)
+    # repo = InboxRepo(db)
+
+    # if await repo.exists_recent(
+    #     source=source.value,
+    #     dedup_key=dedup_key,
+    #     user_id=ctx.telegram_user.id,
+    # ):
+    #     return {"ok": True, "duplicate": True}
+
+    # await repo.add(
+    #     source=source.value,
+    #     dedup_key=dedup_key,
+    #     user_id=ctx.telegram_user.id,
+    # )
