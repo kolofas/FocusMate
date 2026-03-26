@@ -13,5 +13,5 @@ async def handle_today_refresh_or_replan(
     *,
     message_id: int | None,
 ) -> bool:
-    await refresh_today_screen(ctx, args=("refresh",))
+    await refresh_today_screen(ctx, preferred_message_id=message_id)
     return True

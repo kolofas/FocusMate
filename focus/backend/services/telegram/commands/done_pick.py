@@ -27,7 +27,7 @@ async def render_done_pick(
 
     if not remaining:
         text = "На сегодня нечего закрывать ✅"
-        kb = _inline_kb([[("↩️ Назад", "today_refresh")]])
+        kb = _inline_kb([[("⬅️ Назад", "today_refresh")]])
         return text, kb
 
     lines = ["Что закрываем?"]
@@ -40,6 +40,6 @@ async def render_done_pick(
         btn_text = f"{it.rank}. {title}"
         rows.append([(btn_text, f"done:{it.task.id}")])
 
-    rows.append([("↩️ Назад", "today_refresh"), ("📋 Сегодня", "today_refresh")])
+    rows.append([("⬅️ Назад", "today_refresh")])
 
     return "\n".join(lines), _inline_kb(rows)

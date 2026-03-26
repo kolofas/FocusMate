@@ -67,13 +67,15 @@ async def handle_callback(
         return True
 
     if data == "tasks_planned":
-        await handle_tasks_planned(ctx)
-        await answer_callback_query(callback_query_id)
+        await handle_tasks_planned(
+            ctx, callback_query_id=callback_query_id, message_id=message_id
+        )
         return True
 
     if data == "task_add":
-        await handle_task_add(ctx)
-        await answer_callback_query(callback_query_id)
+        await handle_task_add(
+            ctx, callback_query_id=callback_query_id, message_id=message_id
+        )
         return True
 
     if data == "today_delete_pick":
@@ -116,7 +118,7 @@ async def handle_callback(
         )
         return True
 
-    if data.startswith("del_no:"):
+    if data == "del_no":
         await handle_delete_no(
             ctx, callback_query_id=callback_query_id, message_id=message_id
         )

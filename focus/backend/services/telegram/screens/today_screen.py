@@ -14,6 +14,17 @@ from focus.backend.services.telegram.next_actions import (
 from focus.backend.services.telegram.parsers import parse_today_filters
 
 
+def resolve_screen_message_id(
+    ctx: TelegramContext, callback_message_id: int | None
+) -> int | None:
+    """
+    Единая стратегия выбора сообщения для edit:
+    1) message_id из callback (самый актуальный),
+    2) сохранённый screen_message_id пользователя.
+    """
+    return callback_message_id or ctx.telegram_user.screen_message_id
+
+
 async def render_today(
     ctx: TelegramContext, args: Sequence[str]
 ) -> tuple[str, dict[str, Any]]:
@@ -64,7 +75,12 @@ async def render_today(
     return "\n".join(lines), today_keyboard(has_items=True)
 
 
-async def refresh_today_screen(ctx: TelegramContext, args: Sequence[str] = ()) -> None:
+async def refresh_today_screen(
+    ctx: TelegramContext,
+    args: Sequence[str] = (),
+    *,
+    preferred_message_id: int | None = None,
+) -> None:
     """
     Перерисовывать экран /today  в одном и том же сообщении (editMessageText),
     с fallback на sendMessage, и сохраняет screen_message_id в telegram_user
@@ -72,8 +88,7 @@ async def refresh_today_screen(ctx: TelegramContext, args: Sequence[str] = ()) -
     text, kb = await render_today(ctx, args=list(args))
     tg_user = ctx.telegram_user
 
-    force_new = "refresh" in args
-    message_id = None if force_new else tg_user.screen_message_id
+    message_id = resolve_screen_message_id(ctx, preferred_message_id)
 
     new_message_id = await send_or_edit(
         ctx.chat_id,

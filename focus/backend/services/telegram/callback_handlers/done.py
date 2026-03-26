@@ -4,7 +4,10 @@ from focus.backend.database.enums import TaskStatus
 from focus.backend.repositories.tasks_repo import TaskRepo
 from focus.backend.services.tasks import change_task_status
 from focus.backend.services.telegram.api import answer_callback_query, edit_message_text
-from focus.backend.services.telegram.screens.today_screen import render_today
+from focus.backend.services.telegram.screens.today_screen import (
+    refresh_today_screen,
+    resolve_screen_message_id,
+)
 from focus.backend.services.telegram.commands.done_pick import render_done_pick
 from focus.backend.services.telegram.types import TelegramContext
 
@@ -16,7 +19,8 @@ async def handle_today_done_pick(
     message_id: int | None,
 ) -> None:
     text, kb = await render_done_pick(ctx)
-    await edit_message_text(ctx.chat_id, message_id, text, reply_markup=kb)
+    target_message_id = resolve_screen_message_id(ctx, message_id)
+    await edit_message_text(ctx.chat_id, target_message_id, text, reply_markup=kb)
     await answer_callback_query(callback_query_id)
 
 
@@ -45,7 +49,6 @@ async def handle_done_task(
     await change_task_status(task, TaskStatus.DONE)
     await ctx.db.commit()
 
-    text, kb = await render_today(ctx, args=[])
-    await edit_message_text(ctx.chat_id, message_id, text, reply_markup=kb)
+    await refresh_today_screen(ctx, preferred_message_id=message_id)
 
     await answer_callback_query(callback_query_id, text="Готово ✅", show_alert=False)
