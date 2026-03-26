@@ -37,9 +37,9 @@
 # 3️⃣ Приоритеты
 
 ## 🔴 P0 — Критичный UX (ощущение приложения)
-- [ ] Унифицировать editMessageText во всех flow
-- [ ] Уменьшить спам новых сообщений
-- [ ] Сделать единый render/update механизм
+- [x] Унифицировать editMessageText во всех flow
+- [x] Уменьшить спам новых сообщений
+- [x] Сделать единый render/update механизм
 
 Definition of Done:
 - /today, /tasks, /status, /done, /delete работают без лишних сообщений
@@ -99,7 +99,12 @@ C — Planner-центр
     [done] Обновить send_reply → возвращает message_id
     [done] Добавить хранение screen_message_id (модель + миграция + сервис)
     [done] Переписать /today на send_or_edit + save
-    Перевести /done, /status, /del на refresh today screen 
+    [done] Перевести /done, /status, /del на refresh today screen
+    [done] Починить callback del_no
+    [done] Вынести единый resolve_screen_message_id (callback message_id -> screen_message_id)
+    [done] Перевести task_add / tasks_planned callbacks на edit текущего экрана
+    [done] Унифицировать Back до today_refresh (⬅️ Назад)
+    [done] Добавить тесты UX-контракта Telegram (12 passed)
 2.
 3.
 4.
@@ -109,6 +114,10 @@ C — Planner-центр
 
 # 6️⃣ Done log
 
+- 2026-03-26 —
+    Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
+    Починили del_no и унифицировали Back-навигацию на today_refresh.
+    Добавили регрессионные тесты UX-контракта; smoke-check на проде по логам успешный.
 - 2026-02-23 —
     Добавили send_or_edit (edit с fallback на send).
     Научили бот редактировать экран Today вместо спама.
@@ -124,4 +133,3 @@ C — Planner-центр
 2. Не более 5 задач в активной неделе.
 3. После завершения задачи — фиксировать в Done log.
 4. Новые идеи добавлять в P3, а не в текущую неделю.
-

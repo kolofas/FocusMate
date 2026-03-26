@@ -1,13 +1,13 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-02-22
+> Updated: 2026-03-26
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
 - Prod: ✅ deployed (Docker)
 - Core stack: FastAPI + async SQLAlchemy + asyncpg + Alembic
-- Interface: Telegram-first UX (/today + callbacks)
+- Interface: Telegram-first UX (/today + callbacks, single-screen update contract)
 - Quality: tests + pre-commit (ruff) + CI
 - Delivery: Docker build + CD deploy with healthcheck + rollback
 
@@ -58,6 +58,8 @@ Main areas:
 - editMessageText refresh/replan mechanics
 - next-actions UX for /done and /status
 - task delete integrated into today flow
+- callbacks unified to one-screen behavior (`message_id` from callback -> `screen_message_id` fallback)
+- unified back navigation (`today_refresh`, `⬅️ Назад`)
 
 ### Architecture improvements already done
 - asyncpg migration + stable async DB flows
@@ -75,9 +77,9 @@ Main areas:
 
 ## 5) Roadmap (near-term)
 ### Now (1–2 weeks)
-- [ ] Keep PROJECT_MAP always updated after sessions
+- [x] Keep PROJECT_MAP always updated after sessions
 - [ ] Make production runbook (start/stop/logs/health/migrate)
-- [ ] Tighten module boundaries in `services/telegram/` (if needed)
+- [x] Tighten module boundaries in `services/telegram/` (if needed)
 
 ### Next (2–4 weeks)
 - [ ] Extend Telegram UX (batch operations, smoother navigation)
@@ -103,6 +105,7 @@ Main areas:
 ## 7) Recent history (from git)
 > Use this to quickly restore context.
 
+- 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod
 - 2026-02-20 — Telegram: task delete in today flow (`dab50de`)
 - 2026-01-27 — CD: auto deploy with healthcheck + rollback (`18e263b`, `0f69e22`)
 - 2026-01-23 — Docker + CI image build (`c6cc919`, `534dff1`, `62cd40d`)
