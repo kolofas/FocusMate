@@ -80,6 +80,9 @@ Main areas:
 - [x] Keep PROJECT_MAP always updated after sessions
 - [ ] Make production runbook (start/stop/logs/health/migrate)
 - [x] Tighten module boundaries in `services/telegram/` (if needed)
+- [ ] Task Edit MVP (title/status/deadline in Telegram)
+- [ ] Reminders MVP (set/cancel/deliver)
+- [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
 
 ### Next (2–4 weeks)
 - [ ] Extend Telegram UX (batch operations, smoother navigation)

@@ -6,6 +6,21 @@
 
 ---
 
+# 🎯 Финальная точка спринта
+
+FocusMate в Telegram даёт полный ежедневный цикл без хаоса:
+capture -> plan -> do -> reflect,
+а callback-сценарии работают в "экранном" режиме (одно сообщение, минимум спама).
+
+Definition of Done (спринт закрыт, если):
+1. Можно добавить, отредактировать, перенести и закрыть задачу в Telegram.
+2. Можно поставить и отменить напоминание.
+3. Есть /summary today и /summary week.
+4. Ключевые callback-flow обновляют один экран (edit-first).
+5. Тесты зелёные, smoke-check в проде без критичных UX-багов.
+
+---
+
 # 1️⃣ Текущее состояние продукта
 
 ## Ядро (стабильно работает)
@@ -48,9 +63,9 @@ Definition of Done:
 ---
 
 ## 🟠 P1 — Базовая полезность
-- [ ] Редактирование задач
-- [ ] Напоминания (MVP)
-- [ ] Улучшение planner UX
+- [ ] Task Edit MVP (title/status/deadline)
+- [ ] Reminders MVP (set/cancel/deliver)
+- [ ] Planner UX v2 (явный сбор плана + replan без хаоса)
 
 Definition of Done:
 - Можно изменить текст задачи
@@ -60,10 +75,10 @@ Definition of Done:
 ---
 
 ## 🟡 P2 — Усиление ценности
+- [ ] Progress Feedback MVP (/summary today, /summary week)
 - [ ] История фокус-сессий
 - [ ] Статистика по времени
 - [ ] Стрики
-- [ ] Прогресс за неделю
 
 ---
 
@@ -105,10 +120,20 @@ C — Planner-центр
     [done] Перевести task_add / tasks_planned callbacks на edit текущего экрана
     [done] Унифицировать Back до today_refresh (⬅️ Назад)
     [done] Добавить тесты UX-контракта Telegram (12 passed)
-2.
-3.
-4.
-5.
+2. Task Edit MVP
+    [ ] Редактирование title
+    [ ] Изменение status
+    [ ] Изменение/сброс deadline
+3. Reminders MVP
+    [ ] Установка напоминания
+    [ ] Отмена напоминания
+    [ ] Доставка напоминаний в Telegram
+4. Progress Feedback MVP
+    [ ] /summary today
+    [ ] /summary week
+5. Reliability
+    [ ] Логи edit/send fallback/reminders
+    [ ] Регрессионные тесты критичных UX flow
 
 ---
 
