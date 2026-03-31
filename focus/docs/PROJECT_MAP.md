@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-03-26
+> Updated: 2026-03-31
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
@@ -83,6 +83,7 @@ Main areas:
 - [ ] Task Edit MVP (title/status/deadline in Telegram)
 - [ ] Reminders MVP (set/cancel/deliver)
 - [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
+- [ ] Expand regression tests for new edit/reminder/summary flows
 
 ### Next (2–4 weeks)
 - [ ] Extend Telegram UX (batch operations, smoother navigation)

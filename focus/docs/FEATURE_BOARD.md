@@ -108,32 +108,26 @@ C — Planner-центр
 # 5️⃣ План текущей недели
 
 Главный фокус недели:
-- UX-стабилизация
+- Task Edit MVP (первый шаг нового этапа)
 Конкретные задачи:
-1. аудит sendMessage vs editMessageText
-    [done] Обновить send_reply → возвращает message_id
-    [done] Добавить хранение screen_message_id (модель + миграция + сервис)
-    [done] Переписать /today на send_or_edit + save
-    [done] Перевести /done, /status, /del на refresh today screen
-    [done] Починить callback del_no
-    [done] Вынести единый resolve_screen_message_id (callback message_id -> screen_message_id)
-    [done] Перевести task_add / tasks_planned callbacks на edit текущего экрана
-    [done] Унифицировать Back до today_refresh (⬅️ Назад)
-    [done] Добавить тесты UX-контракта Telegram (12 passed)
-2. Task Edit MVP
+1. Task Edit MVP
     [ ] Редактирование title
     [ ] Изменение status
     [ ] Изменение/сброс deadline
-3. Reminders MVP
+    [ ] Inline flow c понятной кнопкой "Назад"
+    [ ] Тесты на edit-flow (happy path + валидации)
+2. Reminders MVP
     [ ] Установка напоминания
     [ ] Отмена напоминания
     [ ] Доставка напоминаний в Telegram
-4. Progress Feedback MVP
+3. Progress Feedback MVP
     [ ] /summary today
     [ ] /summary week
-5. Reliability
+4. Reliability
     [ ] Логи edit/send fallback/reminders
     [ ] Регрессионные тесты критичных UX flow
+5. Ops
+    [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
 
 ---
 
