@@ -30,6 +30,7 @@ async def render_today(
     args: Sequence[str],
     *,
     rebuild_plan: bool = False,
+    notice: str | None = None,
 ) -> tuple[str, dict[str, Any]]:
     db = ctx.db
     telegram_user = ctx.telegram_user
@@ -51,12 +52,18 @@ async def render_today(
         items = [it for it in items if it.task.status != TaskStatus.DONE.value]
 
     if not items:
+        prefix = f"{notice}\n\n" if notice else ""
         if status_filter:
-            text = f"В фокусе на сегодня нет задач со статусом {status_filter}" + (
-                "" if not include_done else " (включая done)."
+            text = (
+                prefix
+                + f"В фокусе на сегодня нет задач со статусом {status_filter}"
+                + ("" if not include_done else " (включая done).")
             )
         else:
-            text = "На сегодня задач нет.\n\nПопробуй:\n• ➕ добавить задачу\n• 🧠 собрать план на день"
+            text = (
+                prefix
+                + "На сегодня задач нет.\n\nПопробуй:\n• ➕ добавить задачу\n• 🧠 собрать план на день"
+            )
         return text, today_keyboard(has_items=False)
 
     header = f"Сегодня • {plan.date}"
@@ -69,6 +76,9 @@ async def render_today(
         header += " (" + ", ".join(suffix_parts) + ")"
 
     lines = [header]
+    if notice:
+        lines.append(notice)
+        lines.append("")
     for item in items:
         emoji = STATUS_EMOJI.get(item.task.status, "•")
         lines.append(
@@ -89,12 +99,18 @@ async def refresh_today_screen(
     *,
     preferred_message_id: int | None = None,
     rebuild_plan: bool = False,
+    notice: str | None = None,
 ) -> None:
     """
     Перерисовывать экран /today  в одном и том же сообщении (editMessageText),
     с fallback на sendMessage, и сохраняет screen_message_id в telegram_user
     """
-    text, kb = await render_today(ctx, args=list(args), rebuild_plan=rebuild_plan)
+    text, kb = await render_today(
+        ctx,
+        args=list(args),
+        rebuild_plan=rebuild_plan,
+        notice=notice,
+    )
     tg_user = ctx.telegram_user
 
     message_id = resolve_screen_message_id(ctx, preferred_message_id)

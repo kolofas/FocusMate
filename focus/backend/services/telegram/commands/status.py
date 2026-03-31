@@ -21,25 +21,29 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
 
     task_id, status_raw = _parse_status_args(args)
     if task_id is None or status_raw is None:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice="⚠️ Формат: /status <id> <status>")
         return
 
     new_status = parse_status(status_raw)
     if not new_status:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice="⚠️ Статус: inbox|planned|done|snoozed")
         return
 
     repo = TaskRepo(ctx.db)
     task = await repo.get_user_task(task_id=task_id, user_id=user_id)
     if not task:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice=f"⚠️ Не нашёл задачу id={task_id}")
         return
 
     if task.status == new_status.value:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice="ℹ️ Без изменений")
         return
 
     await change_task_status(task, new_status)
     await ctx.db.commit()
 
-    await refresh_today_screen(ctx, rebuild_plan=True)
+    await refresh_today_screen(
+        ctx,
+        rebuild_plan=True,
+        notice=f"✅ Статус id={task_id} -> {new_status.value}",
+    )

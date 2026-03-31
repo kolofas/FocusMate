@@ -26,25 +26,31 @@ def _parse_edit_args(args: Sequence[str]) -> tuple[int | None, str | None]:
 async def command_edit(ctx: TelegramContext, args: Sequence[str]) -> None:
     task_id, new_title = _parse_edit_args(args)
     if task_id is None or new_title is None:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(
+            ctx,
+            notice="⚠️ Формат: /edit <id> <новый title>",
+        )
         return
 
     repo = TaskRepo(ctx.db)
     task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
     if not task:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice=f"⚠️ Не нашёл задачу id={task_id}")
         return
 
     normalized_title = new_title[: settings.max_title_length].strip()
     if not normalized_title:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice="⚠️ Title не должен быть пустым")
         return
 
     if task.title == normalized_title:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice="ℹ️ Без изменений")
         return
 
     task.title = normalized_title
     await ctx.db.commit()
 
-    await refresh_today_screen(ctx)
+    await refresh_today_screen(
+        ctx,
+        notice=f"✅ Обновил title для id={task_id}",
+    )

@@ -53,16 +53,23 @@ def _parse_deadline_args(
 async def command_deadline(ctx: TelegramContext, args: Sequence[str]) -> None:
     task_id, deadline_utc, ok = _parse_deadline_args(args)
     if not ok or task_id is None:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(
+            ctx,
+            notice="⚠️ Формат: /deadline <id> <YYYY-MM-DD[ HH:MM]|clear>",
+        )
         return
 
     repo = TaskRepo(ctx.db)
     task = await repo.get_user_task(task_id=task_id, user_id=ctx.telegram_user.id)
     if not task:
-        await refresh_today_screen(ctx)
+        await refresh_today_screen(ctx, notice=f"⚠️ Не нашёл задачу id={task_id}")
         return
 
     task.deadline = deadline_utc
     await ctx.db.commit()
 
-    await refresh_today_screen(ctx, rebuild_plan=True)
+    if deadline_utc is None:
+        notice = f"✅ Сбросил deadline для id={task_id}"
+    else:
+        notice = f"✅ Установил deadline для id={task_id}"
+    await refresh_today_screen(ctx, rebuild_plan=True, notice=notice)
