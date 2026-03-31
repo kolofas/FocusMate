@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from focus.backend.services.telegram.api import answer_callback_query, edit_message_text
-from focus.backend.services.telegram.screens.today_screen import resolve_screen_message_id
+from focus.backend.services.telegram.screens.today_screen import (
+    resolve_screen_message_id,
+)
 from focus.backend.services.telegram.types import TelegramContext
 
 
