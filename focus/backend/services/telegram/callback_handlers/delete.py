@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from focus.backend.repositories.tasks_repo import TaskRepo
-from focus.backend.services.telegram.api import answer_callback_query, edit_message_text
+from focus.backend.services.telegram.api import answer_callback_query, send_or_edit
 from focus.backend.services.telegram.commands.delete_pick import render_delete_pick
 from focus.backend.services.telegram.screens.today_screen import (
     refresh_today_screen,
@@ -18,7 +18,12 @@ async def handle_today_delete_pick(
 ) -> None:
     text, kb = await render_delete_pick(ctx)
     target_message_id = resolve_screen_message_id(ctx, message_id)
-    await edit_message_text(ctx.chat_id, target_message_id, text, reply_markup=kb)
+    new_message_id = await send_or_edit(
+        ctx.chat_id, target_message_id, text, reply_markup=kb
+    )
+    if new_message_id and new_message_id != ctx.telegram_user.screen_message_id:
+        ctx.telegram_user.screen_message_id = new_message_id
+        await ctx.db.commit()
     await answer_callback_query(callback_query_id)
 
 
@@ -49,7 +54,12 @@ async def handle_delete_confirm(
     }
 
     target_message_id = resolve_screen_message_id(ctx, message_id)
-    await edit_message_text(ctx.chat_id, target_message_id, text, reply_markup=kb)
+    new_message_id = await send_or_edit(
+        ctx.chat_id, target_message_id, text, reply_markup=kb
+    )
+    if new_message_id and new_message_id != ctx.telegram_user.screen_message_id:
+        ctx.telegram_user.screen_message_id = new_message_id
+        await ctx.db.commit()
     await answer_callback_query(callback_query_id)
 
 

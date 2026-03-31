@@ -179,6 +179,11 @@ async def send_or_edit(
         )
         if edited:
             return message_id
+        log.warning(
+            "send_or_edit fallback to sendMessage chat_id=%s message_id=%s",
+            chat_id,
+            message_id,
+        )
 
     # fallback: отправляем новое сообщение
     return await send_reply(
