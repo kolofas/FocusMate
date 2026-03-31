@@ -18,6 +18,7 @@ async def get_plan_today(
     *,
     user_id: int | None,
     ensure_build: bool = True,
+    force_rebuild: bool = False,
 ) -> PlanTodayResponse:
     today = date.today()
 
@@ -25,8 +26,13 @@ async def get_plan_today(
 
     focus_list = await repo.get_focus_list_with_items(today, user_id=user_id)
 
-    if not focus_list and ensure_build:
+    if force_rebuild:
         await plan_today(db, user_id=user_id, for_date=today)
+        await db.commit()
+        focus_list = await repo.get_focus_list_with_items(today, user_id=user_id)
+    elif not focus_list and ensure_build:
+        await plan_today(db, user_id=user_id, for_date=today)
+        await db.commit()
         focus_list = await repo.get_focus_list_with_items(today, user_id=user_id)
 
     items = [

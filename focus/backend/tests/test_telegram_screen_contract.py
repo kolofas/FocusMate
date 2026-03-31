@@ -50,3 +50,43 @@ async def test_handle_callback_routes_del_no(monkeypatch):
     assert calls["callback_query_id"] == "cq_1"
     assert calls["message_id"] == 77
     assert "answer_called" not in calls
+
+
+@pytest.mark.anyio
+async def test_handle_callback_routes_today_replan_with_action(monkeypatch):
+    calls: dict[str, object] = {}
+
+    async def fake_handle_today_refresh_or_replan(ctx, *, action, message_id):
+        calls["ctx"] = ctx
+        calls["action"] = action
+        calls["message_id"] = message_id
+        return True
+
+    async def fake_answer_callback_query(
+        callback_query_id, *, text=None, show_alert=False
+    ):
+        calls["callback_query_id"] = callback_query_id
+        calls["answer_text"] = text
+
+    monkeypatch.setattr(
+        callbacks_module,
+        "handle_today_refresh_or_replan",
+        fake_handle_today_refresh_or_replan,
+    )
+    monkeypatch.setattr(
+        callbacks_module, "answer_callback_query", fake_answer_callback_query
+    )
+
+    ctx = SimpleNamespace()
+    handled = await callbacks_module.handle_callback(
+        data="today_replan",
+        ctx=ctx,
+        callback_query_id="cq_2",
+        message_id=88,
+    )
+
+    assert handled is True
+    assert calls["ctx"] is ctx
+    assert calls["action"] == "today_replan"
+    assert calls["message_id"] == 88
+    assert calls["callback_query_id"] == "cq_2"

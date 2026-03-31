@@ -31,3 +31,36 @@ async def test_tasks_crud_and_focus_today(client):
     assert "items" in data
     # как минимум одна задача попала в список
     assert len(data["items"]) >= 1
+
+
+@pytest.mark.anyio
+async def test_focus_today_updates_after_snoozed_to_planned_status_change(client):
+    # create one task
+    payload = {"title": "Replan candidate", "description": "x", "source": "manual"}
+    created = await client.post("/tasks/", json=payload)
+    assert created.status_code == 201
+    task_id = created.json()["id"]
+
+    # build today's focus and ensure the task is there
+    first_today = await client.get("/focus/today")
+    assert first_today.status_code == 200
+    first_ids = [item["task"]["id"] for item in first_today.json()["items"]]
+    assert task_id in first_ids
+
+    # move task out of planner candidates
+    r1 = await client.post(f"/tasks/{task_id}/status", json={"status": "snoozed"})
+    assert r1.status_code == 200
+
+    second_today = await client.get("/focus/today")
+    assert second_today.status_code == 200
+    second_ids = [item["task"]["id"] for item in second_today.json()["items"]]
+    assert task_id not in second_ids
+
+    # move task back to planner candidates and ensure it appears again
+    r2 = await client.post(f"/tasks/{task_id}/status", json={"status": "planned"})
+    assert r2.status_code == 200
+
+    third_today = await client.get("/focus/today")
+    assert third_today.status_code == 200
+    third_ids = [item["task"]["id"] for item in third_today.json()["items"]]
+    assert task_id in third_ids

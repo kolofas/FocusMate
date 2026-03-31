@@ -11,7 +11,11 @@ log = logging.getLogger(__name__)
 async def handle_today_refresh_or_replan(
     ctx: TelegramContext,
     *,
+    action: str,
     message_id: int | None,
 ) -> bool:
-    await refresh_today_screen(ctx, preferred_message_id=message_id)
+    rebuild_plan = action == "today_replan"
+    await refresh_today_screen(
+        ctx, preferred_message_id=message_id, rebuild_plan=rebuild_plan
+    )
     return True

@@ -1,4 +1,5 @@
 # focus/backend/routers/tasks.py
+from datetime import date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Query
@@ -11,6 +12,7 @@ from focus.backend.database.enums import TaskStatus
 from ..schemas.task_queries import TaskListQuery
 from ..services import tasks
 from ..services.tasks import change_task_status
+from ..services.planner import plan_today
 
 router = APIRouter()
 
@@ -115,6 +117,8 @@ async def change_status(
     await change_task_status(obj, payload.status)
 
     try:
+        await db.flush()
+        await plan_today(db, user_id=obj.user_id, for_date=date.today())
         await db.commit()
         await db.refresh(obj)
     except Exception:

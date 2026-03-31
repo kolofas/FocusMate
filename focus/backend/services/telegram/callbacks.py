@@ -35,7 +35,9 @@ async def handle_callback(
     Returns True if handled.
     """
     if data in ("today_refresh", "today_replan"):
-        changed = await handle_today_refresh_or_replan(ctx, message_id=message_id)
+        changed = await handle_today_refresh_or_replan(
+            ctx, action=data, message_id=message_id
+        )
         if not changed:
             msg = "Без изменений" if data == "today_refresh" else "План уже оптимален"
             await answer_callback_query(callback_query_id, text=msg)

@@ -42,4 +42,4 @@ async def command_status(ctx: TelegramContext, args: Sequence[str]) -> None:
     await change_task_status(task, new_status)
     await ctx.db.commit()
 
-    await refresh_today_screen(ctx)
+    await refresh_today_screen(ctx, rebuild_plan=True)

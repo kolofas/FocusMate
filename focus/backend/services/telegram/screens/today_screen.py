@@ -26,14 +26,22 @@ def resolve_screen_message_id(
 
 
 async def render_today(
-    ctx: TelegramContext, args: Sequence[str]
+    ctx: TelegramContext,
+    args: Sequence[str],
+    *,
+    rebuild_plan: bool = False,
 ) -> tuple[str, dict[str, Any]]:
     db = ctx.db
     telegram_user = ctx.telegram_user
 
     status_filter, include_done = parse_today_filters(args)
 
-    plan = await get_plan_today(db, user_id=telegram_user.id, ensure_build=True)
+    plan = await get_plan_today(
+        db,
+        user_id=telegram_user.id,
+        ensure_build=True,
+        force_rebuild=rebuild_plan,
+    )
     items = list(plan.items)
 
     if status_filter:
@@ -80,12 +88,13 @@ async def refresh_today_screen(
     args: Sequence[str] = (),
     *,
     preferred_message_id: int | None = None,
+    rebuild_plan: bool = False,
 ) -> None:
     """
     Перерисовывать экран /today  в одном и том же сообщении (editMessageText),
     с fallback на sendMessage, и сохраняет screen_message_id в telegram_user
     """
-    text, kb = await render_today(ctx, args=list(args))
+    text, kb = await render_today(ctx, args=list(args), rebuild_plan=rebuild_plan)
     tg_user = ctx.telegram_user
 
     message_id = resolve_screen_message_id(ctx, preferred_message_id)
