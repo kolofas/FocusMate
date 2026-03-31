@@ -120,6 +120,7 @@ C — Planner-центр
     [ ] Установка напоминания
     [ ] Отмена напоминания
     [ ] Доставка напоминаний в Telegram
+    [ ] Показ дедлайна рядом с задачей на экране Today (⏰)
 3. Progress Feedback MVP
     [ ] /summary today
     [ ] /summary week

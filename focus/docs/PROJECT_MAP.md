@@ -84,6 +84,7 @@ Main areas:
 - [x] Tighten module boundaries in `services/telegram/` (if needed)
 - [x] Task Edit MVP v1 (title/status/deadline commands in Telegram)
 - [ ] Reminders MVP (set/cancel/deliver)
+- [ ] Show task deadline on Today screen (visibility for urgency/reminders)
 - [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
 - [x] Expand regression tests for planner consistency + edit/deadline command parsing
 
