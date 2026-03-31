@@ -28,7 +28,7 @@ Definition of Done (спринт закрыт, если):
 - Inbox (быстрое добавление + dedup)
 - Planner (интеграция с today)
 - Focus (базовая логика)
-- Telegram UX (/today + callbacks + delete/done flow)
+- Telegram UX (/today + callbacks + delete/done flow + action confirmations)
 - CI/CD + Docker + тесты
 
 ---
@@ -36,7 +36,7 @@ Definition of Done (спринт закрыт, если):
 # 2️⃣ Продуктовые проблемы (по реальному использованию)
 
 ## UX
-- Где-то создаются новые сообщения вместо обновления
+- Где-то ещё создаются новые сообщения вместо ожидаемого поведения
 - Много шагов в некоторых сценариях
 - Нет ощущения “экрана”, иногда ощущение “чата”
 
@@ -111,11 +111,11 @@ C — Planner-центр
 - Task Edit MVP (первый шаг нового этапа)
 Конкретные задачи:
 1. Task Edit MVP
-    [ ] Редактирование title
-    [ ] Изменение status
-    [ ] Изменение/сброс deadline
+    [x] Редактирование title (/edit, /e)
+    [x] Изменение status (/status, /s)
+    [x] Изменение/сброс deadline (/deadline, /dl)
     [ ] Inline flow c понятной кнопкой "Назад"
-    [ ] Тесты на edit-flow (happy path + валидации)
+    [x] Тесты на edit-flow (парсинг + валидации аргументов)
 2. Reminders MVP
     [ ] Установка напоминания
     [ ] Отмена напоминания
@@ -124,8 +124,8 @@ C — Planner-центр
     [ ] /summary today
     [ ] /summary week
 4. Reliability
-    [ ] Логи edit/send fallback/reminders
-    [ ] Регрессионные тесты критичных UX flow
+    [x] Логи edit/send fallback/reminders (базовый уровень)
+    [x] Регрессионные тесты критичных UX flow
 5. Ops
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
 
@@ -133,6 +133,12 @@ C — Planner-центр
 
 # 6️⃣ Done log
 
+- 2026-03-31 —
+    Починили консистентность planner: после status-change (в т.ч. snoozed -> planned) Today пересобирается корректно.
+    Реализовали Task Edit MVP v1: /edit (/e) для title, /deadline (/dl) для установки/сброса дедлайна.
+    Добавили UX-подтверждения действий прямо на экране Today (✅/⚠️/ℹ️), без лишнего спама.
+    Добавили /refresh alias и сделали /today явным "показать экран снова" (новое сообщение).
+    Расширили тесты, итог: 22 passed.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.

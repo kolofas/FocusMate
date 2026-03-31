@@ -60,6 +60,8 @@ Main areas:
 - task delete integrated into today flow
 - callbacks unified to one-screen behavior (`message_id` from callback -> `screen_message_id` fallback)
 - unified back navigation (`today_refresh`, `⬅️ Назад`)
+- explicit `/refresh` command alias and `/today` force-show behavior (new screen message)
+- action confirmations on Today screen (`✅`/`⚠️`/`ℹ️`)
 
 ### Architecture improvements already done
 - asyncpg migration + stable async DB flows
@@ -80,10 +82,10 @@ Main areas:
 - [x] Keep PROJECT_MAP always updated after sessions
 - [ ] Make production runbook (start/stop/logs/health/migrate)
 - [x] Tighten module boundaries in `services/telegram/` (if needed)
-- [ ] Task Edit MVP (title/status/deadline in Telegram)
+- [x] Task Edit MVP v1 (title/status/deadline commands in Telegram)
 - [ ] Reminders MVP (set/cancel/deliver)
 - [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
-- [ ] Expand regression tests for new edit/reminder/summary flows
+- [x] Expand regression tests for planner consistency + edit/deadline command parsing
 
 ### Next (2–4 weeks)
 - [ ] Extend Telegram UX (batch operations, smoother navigation)
@@ -109,6 +111,7 @@ Main areas:
 ## 7) Recent history (from git)
 > Use this to quickly restore context.
 
+- 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod
 - 2026-02-20 — Telegram: task delete in today flow (`dab50de`)
 - 2026-01-27 — CD: auto deploy with healthcheck + rollback (`18e263b`, `0f69e22`)
