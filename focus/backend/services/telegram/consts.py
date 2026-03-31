@@ -6,6 +6,7 @@ HELP_TEXT = (
     "🌟 FocusMate — быстрый инбокс задач\n\n"
     "Команды:\n"
     "/today            — фокус-лист на сегодня\n"
+    "/refresh          — показать/обновить экран today\n"
     "/tasks            — последние задачи (с фильтрами)\n"
     "/done <id>        — отметить задачу выполненной\n"
     "/status <id> <st> — изменить статус (inbox|planned|done|snoozed)\n"

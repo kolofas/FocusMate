@@ -8,4 +8,4 @@ async def command_today(ctx: TelegramContext, args: Sequence[str]) -> None:
     """
     /today [status] [all]
     """
-    await refresh_today_screen(ctx, args=args)
+    await refresh_today_screen(ctx, args=args, force_new_message=True)

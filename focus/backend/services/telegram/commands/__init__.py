@@ -10,6 +10,7 @@ from .deadline import command_deadline
 
 COMMAND_HANDLERS: dict[str, CommandHandler] = {
     "/today": command_today,
+    "/refresh": command_today,
     "/focus": command_today,
     "/tasks": command_tasks,
     "/help": command_help,

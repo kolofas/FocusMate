@@ -100,6 +100,7 @@ async def refresh_today_screen(
     preferred_message_id: int | None = None,
     rebuild_plan: bool = False,
     notice: str | None = None,
+    force_new_message: bool = False,
 ) -> None:
     """
     Перерисовывать экран /today  в одном и том же сообщении (editMessageText),
@@ -113,7 +114,11 @@ async def refresh_today_screen(
     )
     tg_user = ctx.telegram_user
 
-    message_id = resolve_screen_message_id(ctx, preferred_message_id)
+    message_id = (
+        None
+        if force_new_message
+        else resolve_screen_message_id(ctx, preferred_message_id)
+    )
 
     new_message_id = await send_or_edit(
         ctx.chat_id,
