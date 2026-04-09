@@ -121,6 +121,7 @@ C — Planner-центр
     [ ] Отмена напоминания
     [ ] Доставка напоминаний в Telegram
     [ ] Показ дедлайна рядом с задачей на экране Today (⏰)
+    [ ] Infra step: вынести отправку reminder в Redis worker (после MVP на APScheduler)
     [ ] [id:24] Реализовать "Индекс элементов запроса +1"
 3. Quality & UX backlog (from FocusMate)
     [ ] [id:97] Сделать тесты для проекта, покрывающие весь проект
@@ -134,6 +135,9 @@ C — Planner-центр
     [x] Регрессионные тесты критичных UX flow
 6. Ops
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
+7. Code Health
+    [ ] Провести рефакторинг проекта: уменьшить связность, убрать дублирование, упростить Telegram-flow модули
+    [ ] Ввести явные code-style/architecture guardrails для новых изменений
 
 ---
 
@@ -145,6 +149,10 @@ C — Planner-центр
     Добавили UX-подтверждения действий прямо на экране Today (✅/⚠️/ℹ️), без лишнего спама.
     Добавили /refresh alias и сделали /today явным "показать экран снова" (новое сообщение).
     Расширили тесты, итог: 22 passed.
+- 2026-04-09 —
+    Запустили Reminders MVP v1: установка/сброс напоминания + timezone-aware parsing.
+    Добавили отправку due-reminders через APScheduler в app-процессе (single-instance friendly).
+    Зафиксировали следующий инфраструктурный шаг: вынос отправки в Redis worker после стабилизации MVP.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.

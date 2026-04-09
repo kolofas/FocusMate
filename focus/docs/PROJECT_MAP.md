@@ -69,6 +69,7 @@ Main areas:
 - extracted repos for tasks/inbox/planner
 - telegram commands no longer query DB directly (use repos)
 - logging cleanup + ruff
+- reminders worker MVP in app-process (APScheduler polling)
 
 ### CI/CD / Prod
 - pytest in CI
@@ -84,9 +85,11 @@ Main areas:
 - [x] Tighten module boundaries in `services/telegram/` (if needed)
 - [x] Task Edit MVP v1 (title/status/deadline commands in Telegram)
 - [ ] Reminders MVP (set/cancel/deliver)
+- [ ] Reminders infra-next: move send delivery to Redis worker (post-MVP)
 - [ ] Show task deadline on Today screen (visibility for urgency/reminders)
 - [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
 - [x] Expand regression tests for planner consistency + edit/deadline command parsing
+- [ ] Code health: targeted refactor of telegram/services layers (reduce duplication and tighten boundaries)
 
 ### Requested backlog (from FocusMate tasks)
 - [ ] [id:23] Implement reminder setup
@@ -119,6 +122,7 @@ Main areas:
 ## 7) Recent history (from git)
 > Use this to quickly restore context.
 
+- 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod
 - 2026-02-20 — Telegram: task delete in today flow (`dab50de`)
