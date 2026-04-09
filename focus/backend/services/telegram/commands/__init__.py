@@ -7,6 +7,7 @@ from .status import command_status
 from .delete import command_delete
 from .edit import command_edit
 from .deadline import command_deadline
+from .remind import command_remind
 
 COMMAND_HANDLERS: dict[str, CommandHandler] = {
     "/today": command_today,
@@ -25,4 +26,6 @@ COMMAND_HANDLERS: dict[str, CommandHandler] = {
     "/e": command_edit,
     "/deadline": command_deadline,
     "/dl": command_deadline,
+    "/remind": command_remind,
+    "/rem": command_remind,
 }

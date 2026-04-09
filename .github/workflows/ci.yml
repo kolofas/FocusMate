@@ -111,6 +111,10 @@ jobs:
             echo "==> Pull new image"
             docker compose pull app
 
+            echo "==> Run migrations"
+            docker compose run --rm -T app bash -lc 'cd /app && PYTHONPATH=$PWD alembic upgrade head'
+
+
             echo "==> Recreate app"
             docker compose up -d
 

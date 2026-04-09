@@ -30,3 +30,4 @@ focus/focus.db
 *.zip
 public-copy/.codex
 public-copy/
+.codex

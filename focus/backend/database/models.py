@@ -36,6 +36,8 @@ class Task(Base):
         String(20), nullable=False, default="inbox"
     )  # inbox|planned|done|snoozed
     deadline = Column(DateTime(timezone=True), nullable=True)
+    reminder_at = Column(DateTime(timezone=True), nullable=True)
+    reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
     tags = Column(JSONType(), nullable=False, default=list)  # фабрика вместо []
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -50,6 +52,7 @@ class Task(Base):
     __table_args__ = (
         Index("ix_tasks_status", "status"),
         Index("ix_tasks_deadline", "deadline"),
+        Index("ix_tasks_reminder_at", "reminder_at"),
     )
 
 

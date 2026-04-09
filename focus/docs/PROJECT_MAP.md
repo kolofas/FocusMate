@@ -88,6 +88,13 @@ Main areas:
 - [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
 - [x] Expand regression tests for planner consistency + edit/deadline command parsing
 
+### Requested backlog (from FocusMate tasks)
+- [ ] [id:23] Implement reminder setup
+- [ ] [id:24] Implement "query items index +1"
+- [ ] [id:97] Expand tests toward full-project coverage
+- [ ] [id:98] Add buttons for task status change
+- [ ] [id:99] Improve onboarding (reduce first-use complexity)
+
 ### Next (2–4 weeks)
 - [ ] Extend Telegram UX (batch operations, smoother navigation)
 - [ ] More tests around Telegram flows + planner

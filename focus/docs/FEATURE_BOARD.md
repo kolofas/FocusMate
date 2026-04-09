@@ -117,17 +117,22 @@ C — Planner-центр
     [ ] Inline flow c понятной кнопкой "Назад"
     [x] Тесты на edit-flow (парсинг + валидации аргументов)
 2. Reminders MVP
-    [ ] Установка напоминания
+    [ ] [id:23] Установка напоминания
     [ ] Отмена напоминания
     [ ] Доставка напоминаний в Telegram
     [ ] Показ дедлайна рядом с задачей на экране Today (⏰)
-3. Progress Feedback MVP
+    [ ] [id:24] Реализовать "Индекс элементов запроса +1"
+3. Quality & UX backlog (from FocusMate)
+    [ ] [id:97] Сделать тесты для проекта, покрывающие весь проект
+    [ ] [id:98] Реализовать кнопки, чтобы можно было менять статус задачи
+    [ ] [id:99] Проработать погружение для пользователей в приложение (onboarding)
+4. Progress Feedback MVP
     [ ] /summary today
     [ ] /summary week
-4. Reliability
+5. Reliability
     [x] Логи edit/send fallback/reminders (базовый уровень)
     [x] Регрессионные тесты критичных UX flow
-5. Ops
+6. Ops
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
 
 ---
