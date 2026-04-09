@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     urgent_tag: str = "urgent"
     focus_limit: int = 5
     app_timezone: str = "Europe/Amsterdam"
+    reminders_worker_enabled: bool = True
+    reminders_poll_seconds: int = 30
+    reminders_batch_size: int = 50
 
     log_level: str = "INFO"  # DEBUG/INFO/WARN/ERROR
     sql_echo: bool = False  # Печать SQL запросов
