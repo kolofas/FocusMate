@@ -19,9 +19,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("tasks", sa.Column("reminder_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column(
-        "tasks", sa.Column("reminder_sent_at", sa.DateTime(timezone=True), nullable=True)
+        "tasks", sa.Column("reminder_at", sa.DateTime(timezone=True), nullable=True)
+    )
+    op.add_column(
+        "tasks",
+        sa.Column("reminder_sent_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index("ix_tasks_reminder_at", "tasks", ["reminder_at"], unique=False)
 

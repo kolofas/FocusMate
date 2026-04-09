@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     urgent_tag: str = "urgent"
     focus_limit: int = 5
+    app_timezone: str = "Europe/Amsterdam"
 
     log_level: str = "INFO"  # DEBUG/INFO/WARN/ERROR
     sql_echo: bool = False  # Печать SQL запросов

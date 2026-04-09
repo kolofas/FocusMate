@@ -5,16 +5,18 @@ from typing import Sequence
 from zoneinfo import ZoneInfo
 
 from focus.backend.repositories.tasks_repo import TaskRepo
+from focus.backend.settings import settings
 from focus.backend.services.telegram.screens.today_screen import refresh_today_screen
 from focus.backend.services.telegram.types import TelegramContext
 from focus.backend.utils.datetime import to_utc
 
-_LOCAL_TZ = ZoneInfo("Europe/Amsterdam")
 _CLEAR_MARKERS = {"clear", "none", "-"}
 
 
 def _parse_remind_args(
     args: Sequence[str],
+    *,
+    local_tz: ZoneInfo,
 ) -> tuple[int | None, datetime | None, bool]:
     """
     /remind <id> <YYYY-MM-DD[ HH:MM]>
@@ -38,20 +40,28 @@ def _parse_remind_args(
             dt_local = datetime.strptime(normalized, "%Y-%m-%d").replace(
                 hour=9,
                 minute=0,
-                tzinfo=_LOCAL_TZ,
+                tzinfo=local_tz,
             )
             return task_id, to_utc(dt_local), True
 
         dt_local = datetime.strptime(normalized, "%Y-%m-%d %H:%M").replace(
-            tzinfo=_LOCAL_TZ
+            tzinfo=local_tz
         )
         return task_id, to_utc(dt_local), True
     except ValueError:
         return None, None, False
 
 
+def _get_app_tz() -> ZoneInfo:
+    try:
+        return ZoneInfo(settings.app_timezone)
+    except Exception:
+        return ZoneInfo("UTC")
+
+
 async def command_remind(ctx: TelegramContext, args: Sequence[str]) -> None:
-    task_id, reminder_at_utc, ok = _parse_remind_args(args)
+    app_tz = _get_app_tz()
+    task_id, reminder_at_utc, ok = _parse_remind_args(args, local_tz=app_tz)
     if not ok or task_id is None:
         await refresh_today_screen(
             ctx,
@@ -71,7 +81,11 @@ async def command_remind(ctx: TelegramContext, args: Sequence[str]) -> None:
         notice = f"✅ Напоминание для id={task_id} сброшено"
     else:
         task.reminder_sent_at = None
-        notice = f"✅ Напоминание для id={task_id} установлено"
+        local_dt = reminder_at_utc.astimezone(app_tz)
+        notice = (
+            f"✅ Напоминание для id={task_id} установлено: "
+            f"{local_dt.strftime('%Y-%m-%d %H:%M')} ({settings.app_timezone})"
+        )
     await ctx.db.commit()
 
     await refresh_today_screen(ctx, rebuild_plan=True, notice=notice)
