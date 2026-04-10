@@ -12,6 +12,7 @@ from focus.backend.services.telegram.next_actions import (
     suggest_next_action_line,
 )
 from focus.backend.services.telegram.parsers import parse_today_filters
+from focus.backend.services.telegram.time_badges import format_task_time_badges
 
 
 def resolve_screen_message_id(
@@ -83,6 +84,7 @@ async def render_today(
         emoji = STATUS_EMOJI.get(item.task.status, "•")
         lines.append(
             f"{item.rank}. {emoji} [id: {item.task.id}] {item.task.title} ({item.score}🔸)"
+            f"{format_task_time_badges(item.task)}"
         )
 
     lines.append("")

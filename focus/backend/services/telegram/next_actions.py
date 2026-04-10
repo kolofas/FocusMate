@@ -7,6 +7,7 @@ from typing import Any
 from focus.backend.database.enums import TaskStatus
 from focus.backend.services.focus import get_plan_today
 from focus.backend.services.telegram.formatters import format_task_line
+from focus.backend.services.telegram.time_badges import format_task_time_badges
 from focus.backend.services.telegram.types import TelegramContext
 
 log = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ async def suggest_next_action_line(ctx: TelegramContext) -> str:
         next_item = min(remaining, key=lambda x: x.rank)
         return (
             f"Следующая сегодня: {next_item.rank}. {format_task_line(next_item.task)}"
+            f"{format_task_time_badges(next_item.task)}"
         )
 
     except Exception:

@@ -31,6 +31,7 @@ class TaskRead(AppBaseModel):
     source: str
     status: TaskStatus
     deadline: Optional[datetime]
+    reminder_at: Optional[datetime] = None
     tags: List[str] = []
     created_at: datetime
     updated_at: datetime
