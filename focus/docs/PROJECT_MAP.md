@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-03-31
+> Updated: 2026-04-14
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
@@ -84,12 +84,18 @@ Main areas:
 - [ ] Make production runbook (start/stop/logs/health/migrate)
 - [x] Tighten module boundaries in `services/telegram/` (if needed)
 - [x] Task Edit MVP v1 (title/status/deadline commands in Telegram)
-- [ ] Reminders MVP (set/cancel/deliver)
+- [x] Reminders MVP (set/cancel/deliver)
 - [ ] Reminders infra-next: move send delivery to Redis worker (post-MVP)
-- [ ] Show task deadline on Today screen (visibility for urgency/reminders)
+- [x] Show task deadline/reminder on Today screen (visibility for urgency/reminders)
 - [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
 - [x] Expand regression tests for planner consistency + edit/deadline command parsing
 - [ ] Code health: targeted refactor of telegram/services layers (reduce duplication and tighten boundaries)
+- [ ] Sprint pivot (while Telegram is network-blocked on current server):
+  - [x] API/domain hardening: Web UI API contract v1 freeze (`/tasks`, `/focus/today`, `/tasks/{id}/status`)
+  - [ ] API/domain hardening: reminder write-contract (HTTP)
+  - [ ] Web UI MVP (tasks/today/status/edit/deadline/reminder)
+  - [ ] Onboarding v1 (first-run clarity)
+  - [ ] Test expansion for non-Telegram core paths
 
 ### Requested backlog (from FocusMate tasks)
 - [ ] [id:23] Implement reminder setup
@@ -122,6 +128,7 @@ Main areas:
 ## 7) Recent history (from git)
 > Use this to quickly restore context.
 
+- 2026-04-14 — Sprint pivot: temporarily shift focus from Telegram delivery to API/Web/quality layer due server network route issues to `api.telegram.org:443`
 - 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod
@@ -138,3 +145,69 @@ Main areas:
 - PROJECT_MAP.md is the only source of truth.
 - Any doc not updated in 30+ days becomes STALE unless explicitly marked Active.
 - After each coding session: update sections 0, 5, 7 (2 minutes).
+
+---
+
+## 9) Русский перевод (ниже основной версии)
+
+### 0) Текущее состояние (кратко)
+- Прод: ✅ развернут в Docker
+- Стек: FastAPI + async SQLAlchemy + asyncpg + Alembic
+- Интерфейс: Telegram-first UX (`/today` + callbacks, контракт одного экрана)
+- Качество: тесты + pre-commit (ruff) + CI
+- Доставка: Docker build + CD deploy с healthcheck и rollback
+
+### 1) Что такое FocusMate
+Личная система фокуса/продуктивности с Telegram-интерфейсом и backend API.
+Ключевые области:
+- Задачи
+- Фокус (сессии)
+- Inbox (захват)
+- Planner (планирование)
+- Telegram users + Telegram UX сценарии
+- Parsing/Tags/Normalize
+
+### 2) Карта репозитория (где смотреть)
+- `focus/backend/app.py` — вход FastAPI
+- `focus/backend/settings.py` — настройки/env
+- `focus/backend/routers/` — HTTP API
+- `focus/backend/services/` — бизнес-логика
+- `focus/backend/repositories/` — доступ к БД
+- `focus/backend/database/` — engine/sessions/models/migrations
+- `focus/backend/schemas/` — DTO/контракты
+- `focus/backend/tests` — регрессионные тесты
+- `.github/workflows/ci.yml` — CI/CD
+- `Dockerfile`, `focus/docker-compose.yml` — контейнеризация
+
+### 3) Карта выполнения (runtime)
+- Роутеры: tasks/focus/inbox/telegram/health
+- Сервисы: tasks/focus/inbox/planner/telegram_users/parsing
+
+### 4) Карта фич (что уже есть)
+- Telegram UX: `/today`, callbacks, refresh/replan, done/delete, подтверждения действий
+- Архитектура: стабильный async DB flow, layering `routers -> services -> repositories`
+- Прод/CI: pytest в CI, сборка image, CD deploy с проверкой здоровья
+- Напоминания: MVP delivery через APScheduler в app-процессе
+
+### 5) Ближайшая дорожная карта
+Сейчас (1–2 недели):
+- Production runbook
+- Redis worker для reminder-delivery (post-MVP)
+- Progress Feedback MVP (`/summary today`, `/summary week`)
+- Рефакторинг слоев telegram/services
+- Временный pivot спринта (пока текущий сервер нестабилен по Telegram):
+  - укрепление API/domain слоя,
+  - Web UI MVP,
+  - onboarding v1,
+  - расширение тестов для non-Telegram сценариев.
+
+### 6) История (контекст)
+- 2026-04-14 — Pivot спринта на API/Web/quality из-за сетевой недоступности `api.telegram.org:443` на текущем сервере
+- 2026-04-09 — Reminders MVP v1 + APScheduler delivery
+- 2026-03-31 — Planner consistency fix + `/edit`, `/deadline`, `/refresh`
+- 2026-03-26 — стабилизация Telegram UX одного экрана
+
+### 7) Правила
+- `PROJECT_MAP.md` — источник истины.
+- Если документ не обновлялся 30+ дней и не помечен Active — считать stale.
+- После каждой сессии обновлять разделы состояния/roadmap/истории.

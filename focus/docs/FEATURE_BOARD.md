@@ -8,16 +8,15 @@
 
 # 🎯 Финальная точка спринта
 
-FocusMate в Telegram даёт полный ежедневный цикл без хаоса:
-capture -> plan -> do -> reflect,
-а callback-сценарии работают в "экранном" режиме (одно сообщение, минимум спама).
+Спринт-пивот: до переезда на новый сервер фокус на платформенном слое (API + Web UI + качество),
+чтобы не блокироваться на сетевой доступности Telegram.
 
 Definition of Done (спринт закрыт, если):
-1. Можно добавить, отредактировать, перенести и закрыть задачу в Telegram.
-2. Можно поставить и отменить напоминание.
-3. Есть /summary today и /summary week.
-4. Ключевые callback-flow обновляют один экран (edit-first).
-5. Тесты зелёные, smoke-check в проде без критичных UX-багов.
+1. Web UI MVP покрывает базовый daily-flow: список, today, смена статуса, edit, deadline/reminder.
+2. API-контракты по задачам/фокусу/reminder стабильны и покрыты регрессией.
+3. Onboarding v1 делает первый запуск понятным за 1-2 минуты.
+4. Критичные пользовательские сценарии проходят локально и в CI.
+5. Telegram-слой не ломается, но не является блокером для выпуска ценности.
 
 ---
 
@@ -63,8 +62,8 @@ Definition of Done:
 ---
 
 ## 🟠 P1 — Базовая полезность
-- [ ] Task Edit MVP (title/status/deadline)
-- [ ] Reminders MVP (set/cancel/deliver)
+- [x] Task Edit MVP (title/status/deadline)
+- [x] Reminders MVP (set/cancel/deliver)
 - [ ] Planner UX v2 (явный сбор плана + replan без хаоса)
 
 Definition of Done:
@@ -108,36 +107,78 @@ C — Planner-центр
 # 5️⃣ План текущей недели
 
 Главный фокус недели:
-- Task Edit MVP (первый шаг нового этапа)
+- Пивот на non-Telegram слой (API/Web/качество), чтобы не тормозить спринт.
 Конкретные задачи:
-1. Task Edit MVP
-    [x] Редактирование title (/edit, /e)
-    [x] Изменение status (/status, /s)
-    [x] Изменение/сброс deadline (/deadline, /dl)
-    [ ] Inline flow c понятной кнопкой "Назад"
-    [x] Тесты на edit-flow (парсинг + валидации аргументов)
-2. Reminders MVP
-    [ ] [id:23] Установка напоминания
-    [ ] Отмена напоминания
-    [ ] Доставка напоминаний в Telegram
-    [ ] Показ дедлайна рядом с задачей на экране Today (⏰)
-    [ ] Infra step: вынести отправку reminder в Redis worker (после MVP на APScheduler)
+1. API/domain hardening
+    [x] Этап 1: зафиксировать Web UI API contract v1 (`/tasks`, `/focus/today`, `/tasks/{id}/status`)
+    [ ] Этап 2: добавить reminder-поля в write-контракты (`TaskCreate/TaskUpdate`) и PATCH-handlers
+    [ ] Этап 3: единый формат ошибок/валидации для пользовательских операций
+2. Web UI MVP (минимальный контур)
+    [ ] Экран "All tasks"
+    [ ] Экран "Today"
+    [ ] Быстрая смена статуса
+    [ ] Edit title + установка/сброс deadline/reminder
+3. Onboarding v1
+    [ ] [id:99] Пошаговый "первый запуск" (что делать в первые 2 минуты)
+4. Quality
+    [ ] [id:97] Расширить тесты на core API/use-cases
+    [ ] Точечные контрактные тесты для будущего Web UI
+5. Reminders (infra-next)
+    [ ] Вынести delivery в Redis worker после стабилизации базового MVP
+6. Telegram compatibility (без блокировки спринта)
+    [ ] [id:98] Кнопки смены статуса в Telegram
     [ ] [id:24] Реализовать "Индекс элементов запроса +1"
-3. Quality & UX backlog (from FocusMate)
-    [ ] [id:97] Сделать тесты для проекта, покрывающие весь проект
-    [ ] [id:98] Реализовать кнопки, чтобы можно было менять статус задачи
-    [ ] [id:99] Проработать погружение для пользователей в приложение (onboarding)
-4. Progress Feedback MVP
-    [ ] /summary today
-    [ ] /summary week
-5. Reliability
-    [x] Логи edit/send fallback/reminders (базовый уровень)
-    [x] Регрессионные тесты критичных UX flow
-6. Ops
+7. Ops/docs
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
-7. Code Health
-    [ ] Провести рефакторинг проекта: уменьшить связность, убрать дублирование, упростить Telegram-flow модули
-    [ ] Ввести явные code-style/architecture guardrails для новых изменений
+    [ ] Зафиксировать сетевой риск текущего сервера (недоступность api.telegram.org:443)
+
+---
+
+## 5.1 Web UI API contract v1 (freeze)
+
+Цель: собрать Web UI MVP без зависимости от Telegram.
+
+### Read API
+- `GET /tasks/`
+  - query:
+    - `limit` (1..200), `offset` (>=0)
+    - `status` (`inbox|planned|done|snoozed`)
+    - `q` (поиск по title, case-insensitive)
+    - `tag` (без `#`)
+    - `order_by` (`created_at|deadline`)
+    - `dir` (`asc|desc`)
+    - `user_id` (optional)
+  - response: `TaskRead[]`
+- `GET /tasks/{id}`
+  - response: `TaskRead`
+  - `404`: `{"detail":"Task not found"}`
+- `GET /focus/today?user_id=<id>`
+  - response: `PlanTodayResponse { date, items[] }`
+  - `items[i]`: `{ rank, score, task: TaskRead }`
+
+### Write API
+- `POST /tasks/`
+  - body: `TaskCreate { title, description?, source?, deadline?, tags[] }`
+  - response: `201 TaskRead`, `Location: /tasks/{id}`
+- `PATCH /tasks/{id}`
+  - body: `TaskUpdate { title?, description?, deadline?, tags? }`
+  - response: `TaskRead`
+  - `404`: `{"detail":"Task not found"}`
+- `POST /tasks/{id}/status`
+  - body: `{ "status": "inbox|planned|done|snoozed" }`
+  - response: `TaskRead` (+ пересборка today-плана)
+- `DELETE /tasks/{id}`
+  - response: `204`
+  - `404`: `{"detail":"Task not found"}`
+
+### TaskRead v1 (для Web UI)
+`id, title, description, source, status, deadline, reminder_at, tags, created_at, updated_at`
+
+### Known gap for next atomic step
+- Reminder write-contract еще не зафиксирован в HTTP API:
+  - нет `reminder_at` в `TaskCreate/TaskUpdate`;
+  - нет отдельного endpoint-а set/clear reminder.
+  - Это Этап 2 текущего спринта.
 
 ---
 
@@ -153,6 +194,9 @@ C — Planner-центр
     Запустили Reminders MVP v1: установка/сброс напоминания + timezone-aware parsing.
     Добавили отправку due-reminders через APScheduler в app-процессе (single-instance friendly).
     Зафиксировали следующий инфраструктурный шаг: вынос отправки в Redis worker после стабилизации MVP.
+- 2026-04-14 —
+    Подтвердили сетевую проблему текущего сервера: недоступен `api.telegram.org:443` (timeout с хоста и из контейнера).
+    Сделали спринт-пивот: продолжаем развивать продукт через API/Web/качество, не блокируясь на Telegram-доставке.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.

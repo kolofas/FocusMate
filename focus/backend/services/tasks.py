@@ -76,6 +76,8 @@ async def create_task(
         description=((payload.description or "")[:MAX_DESC_LEN]),
         source=(payload.source or "manual"),
         deadline=payload.deadline,
+        reminder_at=payload.reminder_at,
+        reminder_sent_at=None,
         tags=canonicalize_tags(payload.tags),
         status=TaskStatus.INBOX.value,
     )
@@ -106,6 +108,10 @@ async def update_task(
         data["description"] = data["description"][:MAX_DESC_LEN]
     if "tags" in data and data["tags"] is not None:
         data["tags"] = canonicalize_tags(data["tags"])
+    if "reminder_at" in data:
+        # Любое изменение reminder_at должно сбрасывать признак отправки,
+        # чтобы новое/обновленное напоминание снова могло доставиться.
+        data["reminder_sent_at"] = None
 
     for field, value in data.items():
         setattr(task, field, value)

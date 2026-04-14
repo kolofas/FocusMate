@@ -14,6 +14,7 @@ class TaskCreate(AppBaseModel):
     description: Optional[str] = None
     source: Optional[str] = "manual"
     deadline: Optional[datetime] = None
+    reminder_at: Optional[datetime] = None
     tags: List[str] = []
 
 
@@ -21,6 +22,7 @@ class TaskUpdate(AppBaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     deadline: Optional[datetime] = None
+    reminder_at: Optional[datetime] = None
     tags: Optional[List[str]] = None
 
 

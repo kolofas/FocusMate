@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -61,6 +63,66 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="FocusMate (MVP)", lifespan=lifespan)
+
+
+_STATUS_TO_CODE = {
+    400: "bad_request",
+    401: "unauthorized",
+    403: "forbidden",
+    404: "not_found",
+    409: "conflict",
+    422: "validation_error",
+    500: "internal_error",
+}
+
+
+def _error_payload(
+    *,
+    code: str,
+    message: str,
+    details: object | None = None,
+) -> dict[str, object]:
+    error: dict[str, object] = {"code": code, "message": message}
+    if details is not None:
+        error["details"] = details
+    return {"error": error}
+
+
+@app.exception_handler(HTTPException)
+async def handle_http_exception(_: Request, exc: HTTPException) -> JSONResponse:
+    code = _STATUS_TO_CODE.get(exc.status_code, "http_error")
+
+    if isinstance(exc.detail, str):
+        message = exc.detail
+        details = None
+    else:
+        message = "Request failed"
+        details = exc.detail
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=_error_payload(code=code, message=message, details=details),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_validation_error(
+    _: Request, exc: RequestValidationError
+) -> JSONResponse:
+    details = [
+        {"loc": err.get("loc"), "msg": err.get("msg"), "type": err.get("type")}
+        for err in exc.errors()
+    ]
+    return JSONResponse(
+        status_code=422,
+        content=_error_payload(
+            code="validation_error",
+            message="Validation failed",
+            details=details,
+        ),
+    )
+
+
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(inbox_router, prefix="/inbox", tags=["inbox"])
 app.include_router(tasks_router, prefix="/tasks", tags=["tasks"])

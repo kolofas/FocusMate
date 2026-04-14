@@ -64,3 +64,47 @@ async def test_focus_today_updates_after_snoozed_to_planned_status_change(client
     assert third_today.status_code == 200
     third_ids = [item["task"]["id"] for item in third_today.json()["items"]]
     assert task_id in third_ids
+
+
+@pytest.mark.anyio
+async def test_create_task_accepts_reminder_at(client):
+    reminder_dt = datetime(2026, 4, 20, 10, 30, tzinfo=timezone.utc)
+    reminder_at = reminder_dt.isoformat()
+    payload = {
+        "title": "Task with reminder",
+        "description": "x",
+        "source": "manual",
+        "reminder_at": reminder_at,
+    }
+
+    created = await client.post("/tasks/", json=payload)
+    assert created.status_code == 201
+    body = created.json()
+    assert body["title"] == "Task with reminder"
+    returned = datetime.fromisoformat(body["reminder_at"].replace("Z", "+00:00"))
+    assert returned == reminder_dt
+
+
+@pytest.mark.anyio
+async def test_patch_task_sets_and_clears_reminder_at(client):
+    created = await client.post(
+        "/tasks/",
+        json={"title": "Patch reminder", "description": "x", "source": "manual"},
+    )
+    assert created.status_code == 201
+    task_id = created.json()["id"]
+
+    set_dt = datetime(2026, 4, 21, 9, 15, tzinfo=timezone.utc)
+    set_value = set_dt.isoformat()
+    patched_set = await client.patch(
+        f"/tasks/{task_id}", json={"reminder_at": set_value}
+    )
+    assert patched_set.status_code == 200
+    returned = datetime.fromisoformat(
+        patched_set.json()["reminder_at"].replace("Z", "+00:00")
+    )
+    assert returned == set_dt
+
+    patched_clear = await client.patch(f"/tasks/{task_id}", json={"reminder_at": None})
+    assert patched_clear.status_code == 200
+    assert patched_clear.json()["reminder_at"] is None
