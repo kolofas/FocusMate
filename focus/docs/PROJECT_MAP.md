@@ -33,6 +33,7 @@ Main areas:
 - `focus/backend/database/` - engine/sessions/models/enums/migrations
 - `focus/backend/schemas/` - DTO / query models
 - `focus/backend/utils/` - helpers (datetime/normalize/tags)
+- `focus/web/` - Web UI MVP (React + Vite + TypeScript)
 
 ### Tests
 - `focus/backend/tests` - regression suite
@@ -92,8 +93,11 @@ Main areas:
 - [ ] Code health: targeted refactor of telegram/services layers (reduce duplication and tighten boundaries)
 - [ ] Sprint pivot (while Telegram is network-blocked on current server):
   - [x] API/domain hardening: Web UI API contract v1 freeze (`/tasks`, `/focus/today`, `/tasks/{id}/status`)
-  - [ ] API/domain hardening: reminder write-contract (HTTP)
+  - [x] API/domain hardening: reminder write-contract (HTTP)
+  - [x] API/domain hardening: unified error-contract (`error.code/message/details`)
   - [ ] Web UI MVP (tasks/today/status/edit/deadline/reminder)
+    - [x] Stage 1: frontend skeleton + read-only screens (All/Today)
+    - [ ] Stage 2: actions (status/edit/deadline/reminder)
   - [ ] Onboarding v1 (first-run clarity)
   - [ ] Test expansion for non-Telegram core paths
 
@@ -129,6 +133,8 @@ Main areas:
 > Use this to quickly restore context.
 
 - 2026-04-14 — Sprint pivot: temporarily shift focus from Telegram delivery to API/Web/quality layer due server network route issues to `api.telegram.org:443`
+- 2026-04-14 — API hardening stage completed: reminder write-fields in `/tasks` create/update + unified HTTP error contract; regression 33 passed
+- 2026-04-14 — Web UI Stage 1: scaffolded `focus/web` (React+Vite+TS), minimalistic layout, read-only All/Today screens, API wiring, CORS for local web dev
 - 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod

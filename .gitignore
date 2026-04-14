@@ -31,3 +31,9 @@ focus/focus.db
 public-copy/.codex
 public-copy/
 .codex
+
+# Frontend
+node_modules/
+dist/
+focus/web/node_modules/
+focus/web/dist/

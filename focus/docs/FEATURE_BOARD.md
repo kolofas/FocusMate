@@ -111,11 +111,12 @@ C — Planner-центр
 Конкретные задачи:
 1. API/domain hardening
     [x] Этап 1: зафиксировать Web UI API contract v1 (`/tasks`, `/focus/today`, `/tasks/{id}/status`)
-    [ ] Этап 2: добавить reminder-поля в write-контракты (`TaskCreate/TaskUpdate`) и PATCH-handlers
-    [ ] Этап 3: единый формат ошибок/валидации для пользовательских операций
+    [x] Этап 2: добавить reminder-поля в write-контракты (`TaskCreate/TaskUpdate`) и PATCH-handlers
+    [x] Этап 3: единый формат ошибок/валидации для пользовательских операций
 2. Web UI MVP (минимальный контур)
-    [ ] Экран "All tasks"
-    [ ] Экран "Today"
+    [x] Этап 1: каркас React+Vite+TS + минималистичный UI shell
+    [x] Экран "All tasks" (read-only)
+    [x] Экран "Today" (read-only)
     [ ] Быстрая смена статуса
     [ ] Edit title + установка/сброс deadline/reminder
 3. Onboarding v1
@@ -151,34 +152,39 @@ C — Planner-центр
   - response: `TaskRead[]`
 - `GET /tasks/{id}`
   - response: `TaskRead`
-  - `404`: `{"detail":"Task not found"}`
+  - `404`: `{"error":{"code":"not_found","message":"Task not found"}}`
 - `GET /focus/today?user_id=<id>`
   - response: `PlanTodayResponse { date, items[] }`
   - `items[i]`: `{ rank, score, task: TaskRead }`
 
 ### Write API
 - `POST /tasks/`
-  - body: `TaskCreate { title, description?, source?, deadline?, tags[] }`
+  - body: `TaskCreate { title, description?, source?, deadline?, reminder_at?, tags[] }`
   - response: `201 TaskRead`, `Location: /tasks/{id}`
 - `PATCH /tasks/{id}`
-  - body: `TaskUpdate { title?, description?, deadline?, tags? }`
+  - body: `TaskUpdate { title?, description?, deadline?, reminder_at?, tags? }`
   - response: `TaskRead`
-  - `404`: `{"detail":"Task not found"}`
+  - `404`: `{"error":{"code":"not_found","message":"Task not found"}}`
 - `POST /tasks/{id}/status`
   - body: `{ "status": "inbox|planned|done|snoozed" }`
   - response: `TaskRead` (+ пересборка today-плана)
 - `DELETE /tasks/{id}`
   - response: `204`
-  - `404`: `{"detail":"Task not found"}`
+  - `404`: `{"error":{"code":"not_found","message":"Task not found"}}`
+
+### Error contract v1 (for Web UI)
+- `400`: `{"error":{"code":"bad_request","message":"..."}}`
+- `404`: `{"error":{"code":"not_found","message":"..."}}`
+- `409`: `{"error":{"code":"conflict","message":"..."}}`
+- `422`: `{"error":{"code":"validation_error","message":"Validation failed","details":[...]}}`
 
 ### TaskRead v1 (для Web UI)
 `id, title, description, source, status, deadline, reminder_at, tags, created_at, updated_at`
 
 ### Known gap for next atomic step
 - Reminder write-contract еще не зафиксирован в HTTP API:
-  - нет `reminder_at` в `TaskCreate/TaskUpdate`;
-  - нет отдельного endpoint-а set/clear reminder.
-  - Это Этап 2 текущего спринта.
+  - нет отдельного endpoint-а set/clear reminder (сейчас через `POST/PATCH /tasks`).
+  - Это отдельный шаг после Web UI MVP скелета.
 
 ---
 
@@ -197,6 +203,14 @@ C — Planner-центр
 - 2026-04-14 —
     Подтвердили сетевую проблему текущего сервера: недоступен `api.telegram.org:443` (timeout с хоста и из контейнера).
     Сделали спринт-пивот: продолжаем развивать продукт через API/Web/качество, не блокируясь на Telegram-доставке.
+- 2026-04-14 (этап API hardening) —
+    Завершили Этап 2: `reminder_at` добавлен в HTTP write-контракты (`TaskCreate`/`TaskUpdate`) и в create/update flow.
+    Завершили Этап 3: введен единый error-contract API (`error.code`, `error.message`, `error.details`), добавлены контрактные тесты.
+    Smoke-check через Postman и логи: `400/404/422/201/200` ожидаемо, `make test` -> 33 passed.
+- 2026-04-14 (Web UI Stage 1) —
+    Подняли каркас `focus/web` (React + Vite + TypeScript) в минималистичном стиле.
+    Реализовали read-only экраны `All tasks` и `Today` с отображением `deadline/reminder`.
+    Подготовили API-связку и добавили CORS-настройку для локального веб-режима.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.

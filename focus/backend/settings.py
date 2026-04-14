@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     telegram_webhook_secret: str | None = None  # для пути /telegram/webhook/{secret}
     telegram_mode: str = "webhook"  # "webhook" | "polling"
     telegram_log_updates: bool = True
+    web_cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     model_config = SettingsConfigDict(env_file=ENV_PATH, extra="ignore")
 

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import os
@@ -63,6 +64,17 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="FocusMate (MVP)", lifespan=lifespan)
+
+allowed_origins = [
+    origin.strip() for origin in settings.web_cors_origins.split(",") if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins or ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 _STATUS_TO_CODE = {
