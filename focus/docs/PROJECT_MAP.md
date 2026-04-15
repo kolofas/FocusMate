@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-04-14
+> Updated: 2026-04-16
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
@@ -12,14 +12,14 @@
 - Delivery: Docker build + CD deploy with healthcheck + rollback
 
 ## 1) What FocusMate is
-Personal focus / productivity system with Telegram IX and backend API.
-Main areas:
-- Tasks
-- Focus (sessions)
-- Inbox (capture)
-- Planner (planning)
-- Telegram users + Telegram UX flows
-- Parsing/Tags/Normalize (text utilities)
+Life improvement system (web-first + API), where actions improve life categories
+and progress is visible daily/weekly.
+Main areas (v2 direction):
+- Life categories (health/work/growth/energy/personal)
+- Quick actions (1-2 taps, presets-first)
+- Progress tracking (day/week balance + trends)
+- Existing tasks/focus/inbox stack kept as compatibility layer
+- Telegram integration as optional channel (not core blocker)
 
 ## 2) Repo map (where to look)
 ### App core
@@ -100,6 +100,10 @@ Main areas:
     - [ ] Stage 2: actions (status/edit/deadline/reminder)
   - [ ] Onboarding v1 (first-run clarity)
   - [ ] Test expansion for non-Telegram core paths
+  - [ ] Product pivot v2 (life panel model):
+    - [ ] Sprint 1: backend foundation (`LifeCategory`, `ActionTemplate`, `UserAction`, `ProgressEntry`) + `/life/*` core API
+    - [ ] Sprint 2: dashboard and fast UX (`/life/dashboard/today|week`, recent/repeat actions, 1-2 tap flow)
+    - [ ] Sprint 3: onboarding + unlocks + polish (without heavy gamification/social)
 
 ### Requested backlog (from FocusMate tasks)
 - [ ] [id:23] Implement reminder setup
@@ -135,6 +139,7 @@ Main areas:
 - 2026-04-14 — Sprint pivot: temporarily shift focus from Telegram delivery to API/Web/quality layer due server network route issues to `api.telegram.org:443`
 - 2026-04-14 — API hardening stage completed: reminder write-fields in `/tasks` create/update + unified HTTP error contract; regression 33 passed
 - 2026-04-14 — Web UI Stage 1: scaffolded `focus/web` (React+Vite+TS), minimalistic layout, read-only All/Today screens, API wiring, CORS for local web dev
+- 2026-04-16 — Product direction freeze v2: FocusMate as life-control panel (`action -> category -> visible progress`), 3-sprint plan approved
 - 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod

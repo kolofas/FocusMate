@@ -20,6 +20,33 @@ Definition of Done (спринт закрыт, если):
 
 ---
 
+# 🧭 Product Direction v2 (freeze)
+
+FocusMate = панель улучшения жизни, а не только таск-менеджер.
+
+Core loop:
+`быстрое действие (1-2 тапа) -> рост категории жизни -> видимый прогресс (день/неделя)`
+
+Категории MVP:
+- здоровье
+- работа/деньги
+- развитие/учёба
+- состояние/энергия
+- личное
+
+UX принцип:
+- минимум ввода, максимум выбора/пресетов
+- повтор "как вчера"
+- мгновенный визуальный отклик
+
+Что не делаем в первой волне:
+- сложная геймификация
+- социальные механики
+- AI-коуч
+- тяжелая кастомизация
+
+---
+
 # 1️⃣ Текущее состояние продукта
 
 ## Ядро (стабильно работает)
@@ -135,6 +162,36 @@ C — Planner-центр
 
 ---
 
+## 5.2 Plan for 3 sprints (v2)
+
+### Sprint 1 — Foundation (backend-first)
+- Новые сущности: `LifeCategory`, `ActionTemplate`, `UserAction`, `ProgressEntry`
+- Миграции и сервисные правила начисления прогресса
+- API:
+  - `GET /life/categories`
+  - `GET /life/actions/quick`
+  - `POST /life/actions/log`
+- Тесты для core use-cases
+
+### Sprint 2 — Dashboard + Fast UX
+- API:
+  - `GET /life/dashboard/today`
+  - `GET /life/dashboard/week`
+  - `GET /life/actions/recent`
+- Web UI:
+  - экран категорий
+  - быстрые пресеты действий
+  - повтор последнего/вчерашнего
+- Фокус на 1-2 тапа до результата
+
+### Sprint 3 — Product polish
+- Onboarding v1 (первые 2 минуты)
+- Простые unlock-механики (без магазина)
+- Подсветка перекосов и базовые рекомендации
+- Beta-ready smoke + регрессия
+
+---
+
 ## 5.1 Web UI API contract v1 (freeze)
 
 Цель: собрать Web UI MVP без зависимости от Telegram.
@@ -211,6 +268,9 @@ C — Planner-центр
     Подняли каркас `focus/web` (React + Vite + TypeScript) в минималистичном стиле.
     Реализовали read-only экраны `All tasks` и `Today` с отображением `deadline/reminder`.
     Подготовили API-связку и добавили CORS-настройку для локального веб-режима.
+- 2026-04-16 —
+    Зафиксировали product direction v2: FocusMate как life-panel.
+    Утвердили глобальный план на 3 спринта: Foundation -> Dashboard/Fast UX -> Product polish.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.
