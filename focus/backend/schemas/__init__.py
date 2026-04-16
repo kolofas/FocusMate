@@ -57,3 +57,21 @@ class PlanTodayResponseItem(AppBaseModel):
 class PlanTodayResponse(AppBaseModel):
     date: date
     items: List[PlanTodayResponseItem]
+
+
+class LifeCategoryRead(AppBaseModel):
+    id: int
+    slug: str
+    title: str
+    sort_order: int
+    is_active: bool
+
+
+class ActionTemplateRead(AppBaseModel):
+    id: int
+    category_id: Optional[int]
+    slug: str
+    title: str
+    default_points: int
+    default_duration_min: Optional[int]
+    is_active: bool

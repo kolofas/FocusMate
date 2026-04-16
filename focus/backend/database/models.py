@@ -5,6 +5,7 @@ from sqlalchemy import (
     String,
     Text,
     DateTime,
+    Boolean,
     func,
     UniqueConstraint,
     Index,
@@ -144,3 +145,154 @@ class TelegramUser(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     screen_message_id = Column(Integer, nullable=True)
+
+
+class LifeCategory(Base):
+    __tablename__ = "life_categories"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("telegram_users.id", ondelete="SET NULL"), nullable=True
+    )
+    slug = Column(String(50), nullable=False)
+    title = Column(String(100), nullable=False)
+    sort_order = Column(Integer, nullable=False, default=0)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    templates = relationship(
+        "ActionTemplate", back_populates="category", lazy="selectin"
+    )
+    progress_entries = relationship(
+        "ProgressEntry", back_populates="category", lazy="selectin"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "slug", name="ux_life_categories_user_slug"),
+        Index("ix_life_categories_user_id", "user_id"),
+        Index("ix_life_categories_slug", "slug"),
+    )
+
+
+class ActionTemplate(Base):
+    __tablename__ = "action_templates"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("telegram_users.id", ondelete="SET NULL"), nullable=True
+    )
+    category_id = Column(
+        Integer, ForeignKey("life_categories.id", ondelete="SET NULL"), nullable=True
+    )
+    slug = Column(String(80), nullable=False)
+    title = Column(String(200), nullable=False)
+    default_points = Column(Integer, nullable=False, default=1)
+    default_duration_min = Column(Integer, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    category = relationship("LifeCategory", back_populates="templates", lazy="selectin")
+    user_actions = relationship(
+        "UserAction", back_populates="template", lazy="selectin"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "slug", name="ux_action_templates_user_slug"),
+        Index("ix_action_templates_user_id", "user_id"),
+        Index("ix_action_templates_category_id", "category_id"),
+        Index("ix_action_templates_slug", "slug"),
+    )
+
+
+class UserAction(Base):
+    __tablename__ = "user_actions"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("telegram_users.id", ondelete="SET NULL"), nullable=True
+    )
+    template_id = Column(
+        Integer, ForeignKey("action_templates.id", ondelete="SET NULL"), nullable=True
+    )
+    category_id = Column(
+        Integer, ForeignKey("life_categories.id", ondelete="SET NULL"), nullable=True
+    )
+    title = Column(String(200), nullable=False)
+    points = Column(Integer, nullable=False, default=1)
+    duration_min = Column(Integer, nullable=True)
+    happened_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    template = relationship(
+        "ActionTemplate", back_populates="user_actions", lazy="selectin"
+    )
+    progress_entries = relationship(
+        "ProgressEntry",
+        back_populates="user_action",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    __table_args__ = (
+        Index("ix_user_actions_user_id", "user_id"),
+        Index("ix_user_actions_template_id", "template_id"),
+        Index("ix_user_actions_category_id", "category_id"),
+        Index("ix_user_actions_happened_at", "happened_at"),
+    )
+
+
+class ProgressEntry(Base):
+    __tablename__ = "progress_entries"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("telegram_users.id", ondelete="SET NULL"), nullable=True
+    )
+    category_id = Column(
+        Integer, ForeignKey("life_categories.id", ondelete="SET NULL"), nullable=True
+    )
+    user_action_id = Column(
+        Integer, ForeignKey("user_actions.id", ondelete="SET NULL"), nullable=True
+    )
+    delta_points = Column(Integer, nullable=False)
+    balance_after = Column(Integer, nullable=True)
+    occurred_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    category = relationship(
+        "LifeCategory", back_populates="progress_entries", lazy="selectin"
+    )
+    user_action = relationship(
+        "UserAction", back_populates="progress_entries", lazy="selectin"
+    )
+
+    __table_args__ = (
+        Index("ix_progress_entries_user_id", "user_id"),
+        Index("ix_progress_entries_category_id", "category_id"),
+        Index("ix_progress_entries_user_action_id", "user_action_id"),
+        Index("ix_progress_entries_occurred_at", "occurred_at"),
+    )
