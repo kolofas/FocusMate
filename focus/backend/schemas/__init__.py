@@ -75,3 +75,20 @@ class ActionTemplateRead(AppBaseModel):
     default_points: int
     default_duration_min: Optional[int]
     is_active: bool
+
+
+class UserActionCreate(AppBaseModel):
+    user_id: int | None = None
+    template_id: int | None = None
+    category_id: int | None = None
+    title: str | None = None
+    points: int | None = None
+    duration_min: int | None = None
+    happened_at: datetime | None = None
+
+
+class UserActionLogResponse(AppBaseModel):
+    user_action_id: int
+    progress_entry_id: int
+    category_id: int | None
+    delta_points: int

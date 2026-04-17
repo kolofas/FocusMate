@@ -1,11 +1,22 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from focus.backend.database.core import get_db
-from focus.backend.schemas import LifeCategoryRead, ActionTemplateRead
-from focus.backend.services.life import get_life_categories, get_quick_action_templates
+from focus.backend.schemas import (
+    LifeCategoryRead,
+    ActionTemplateRead,
+    UserActionCreate,
+    UserActionLogResponse,
+)
+from focus.backend.services.life import (
+    get_life_categories,
+    get_quick_action_templates,
+    log_user_action,
+    LifeValidationError,
+    LifeNotFoundError,
+)
 
 router = APIRouter()
 
@@ -29,3 +40,16 @@ async def read_quick_action_templates(
         user_id=user_id,
         include_inactive=include_inactive,
     )
+
+
+@router.post("/actions/log", response_model=UserActionLogResponse)
+async def create_user_action_log(
+    payload: UserActionCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await log_user_action(db, payload=payload)
+    except LifeValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LifeNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))

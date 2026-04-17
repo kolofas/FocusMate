@@ -50,7 +50,9 @@ def upgrade() -> None:
     op.create_index(
         "ix_life_categories_user_id", "life_categories", ["user_id"], unique=False
     )
-    op.create_index("ix_life_categories_slug", "life_categories", ["slug"], unique=False)
+    op.create_index(
+        "ix_life_categories_slug", "life_categories", ["slug"], unique=False
+    )
 
     op.create_table(
         "action_templates",
