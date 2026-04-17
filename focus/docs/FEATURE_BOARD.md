@@ -173,6 +173,11 @@ C — Planner-центр
   - `POST /life/actions/log`
 - Тесты для core use-cases
 
+Status:
+- [x] Foundation model/tables added
+- [x] Core read/write life endpoints added
+- [ ] Core automated tests expansion (next atomic step)
+
 ### Sprint 2 — Dashboard + Fast UX
 - API:
   - `GET /life/dashboard/today`
@@ -271,6 +276,11 @@ C — Planner-центр
 - 2026-04-16 —
     Зафиксировали product direction v2: FocusMate как life-panel.
     Утвердили глобальный план на 3 спринта: Foundation -> Dashboard/Fast UX -> Product polish.
+- 2026-04-18 (Sprint 1 / Step 3) —
+    Добавили доменные foundation-сущности и миграции: `LifeCategory`, `ActionTemplate`, `UserAction`, `ProgressEntry`.
+    Подняли core API `/life`: `GET /life/categories`, `GET /life/actions/quick`, `POST /life/actions/log`.
+    Прогнали smoke в Postman: успешные ответы `200 OK` для сценариев log action (template/manual).
+    Провели рефактор `log_user_action`: разбили перегруженный метод на helper-функции для читаемости и поддержки.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.
