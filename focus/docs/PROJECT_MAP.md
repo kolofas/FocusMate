@@ -103,6 +103,12 @@ Main areas (v2 direction):
   - [ ] Product pivot v2 (life panel model):
     - [x] Sprint 1: backend foundation (`LifeCategory`, `ActionTemplate`, `UserAction`, `ProgressEntry`) + `/life/*` core API
     - [ ] Sprint 2: dashboard and fast UX (`/life/dashboard/today|week`, recent/repeat actions, 1-2 tap flow)
+      - [x] `GET /life/dashboard/today`
+      - [x] `GET /life/dashboard/week`
+      - [x] `GET /life/actions/recent`
+      - [x] `POST /life/actions/repeat`
+      - [ ] shortcut `repeat last/yesterday`
+      - [ ] web wiring + UX for fast repeat
     - [ ] Sprint 3: onboarding + unlocks + polish (without heavy gamification/social)
 
 ### Requested backlog (from FocusMate tasks)
@@ -141,6 +147,7 @@ Main areas (v2 direction):
 - 2026-04-14 — Web UI Stage 1: scaffolded `focus/web` (React+Vite+TS), minimalistic layout, read-only All/Today screens, API wiring, CORS for local web dev
 - 2026-04-16 — Product direction freeze v2: FocusMate as life-control panel (`action -> category -> visible progress`), 3-sprint plan approved
 - 2026-04-18 — Sprint 1 core implemented: added life domain models+migrations and core `/life` endpoints (`categories`, `actions/quick`, `actions/log`); smoke-checked in Postman
+- 2026-04-18 — Sprint 2 API in progress: added `/life/dashboard/today`, `/life/dashboard/week`, `/life/actions/recent`, `/life/actions/repeat`; smoke-checked via Postman (`200 OK`)
 - 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod

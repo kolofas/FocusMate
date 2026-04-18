@@ -180,14 +180,21 @@ Status:
 
 ### Sprint 2 — Dashboard + Fast UX
 - API:
-  - `GET /life/dashboard/today`
-  - `GET /life/dashboard/week`
-  - `GET /life/actions/recent`
+  - [x] `GET /life/dashboard/today`
+  - [x] `GET /life/dashboard/week`
+  - [x] `GET /life/actions/recent`
+  - [x] `POST /life/actions/repeat`
 - Web UI:
   - экран категорий
   - быстрые пресеты действий
   - повтор последнего/вчерашнего
 - Фокус на 1-2 тапа до результата
+
+Status:
+- [x] Read/dashboard API for day/week/recent
+- [x] Fast repeat API (reuse previous action in 1 call)
+- [ ] "Repeat last/yesterday" shortcut endpoint
+- [ ] Web UI wiring for new life endpoints
 
 ### Sprint 3 — Product polish
 - Onboarding v1 (первые 2 минуты)
@@ -281,6 +288,10 @@ Status:
     Подняли core API `/life`: `GET /life/categories`, `GET /life/actions/quick`, `POST /life/actions/log`.
     Прогнали smoke в Postman: успешные ответы `200 OK` для сценариев log action (template/manual).
     Провели рефактор `log_user_action`: разбили перегруженный метод на helper-функции для читаемости и поддержки.
+- 2026-04-18 (Sprint 2 / API progress) —
+    Добавили life-dashboard endpoints: `GET /life/dashboard/today`, `GET /life/dashboard/week`.
+    Добавили ленту действий `GET /life/actions/recent` и быстрый re-use `POST /life/actions/repeat`.
+    Прогнали smoke-check в Postman: `log -> repeat -> dashboard(today/week) -> recent`, ответы стабильные `200 OK`.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.
