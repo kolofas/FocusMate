@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from focus.backend.database import models
@@ -105,3 +107,67 @@ class LifeRepo:
 
     def add_progress_entry(self, entry: models.ProgressEntry) -> None:
         self.db.add(entry)
+
+    async def list_recent_user_actions(
+        self, *, user_id: int | None, limit: int = 10
+    ) -> list[tuple[models.UserAction, str | None, str | None]]:
+        stmt = (
+            select(
+                models.UserAction,
+                models.LifeCategory.slug.label("category_slug"),
+                models.LifeCategory.title.label("category_title"),
+            )
+            .outerjoin(
+                models.LifeCategory,
+                models.LifeCategory.id == models.UserAction.category_id,
+            )
+            .where(
+                models.UserAction.user_id.is_(None)
+                if user_id is None
+                else models.UserAction.user_id == user_id
+            )
+            .order_by(models.UserAction.happened_at.desc(), models.UserAction.id.desc())
+            .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+        return list(result.all())
+
+    async def get_user_action(
+        self, *, action_id: int, user_id: int | None
+    ) -> models.UserAction | None:
+        stmt = select(models.UserAction).where(
+            models.UserAction.id == action_id,
+            models.UserAction.user_id.is_(None)
+            if user_id is None
+            else models.UserAction.user_id == user_id,
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
+    async def sum_progress_points_by_category(
+        self,
+        *,
+        user_id: int | None,
+        start_utc: datetime,
+        end_utc: datetime,
+    ) -> dict[int, int]:
+        stmt = (
+            select(
+                models.ProgressEntry.category_id,
+                func.coalesce(func.sum(models.ProgressEntry.delta_points), 0).label(
+                    "points"
+                ),
+            )
+            .where(
+                models.ProgressEntry.occurred_at >= start_utc,
+                models.ProgressEntry.occurred_at < end_utc,
+                models.ProgressEntry.category_id.is_not(None),
+                models.ProgressEntry.user_id.is_(None)
+                if user_id is None
+                else models.ProgressEntry.user_id == user_id,
+            )
+            .group_by(models.ProgressEntry.category_id)
+        )
+        result = await self.db.execute(stmt)
+        rows = result.all()
+        return {int(category_id): int(points) for category_id, points in rows}

@@ -92,3 +92,46 @@ class UserActionLogResponse(AppBaseModel):
     progress_entry_id: int
     category_id: int | None
     delta_points: int
+
+
+class UserActionRepeatCreate(AppBaseModel):
+    user_action_id: int
+    user_id: int | None = None
+    happened_at: datetime | None = None
+
+
+class UserActionRepeatResponse(UserActionLogResponse):
+    repeated_from_action_id: int
+
+
+class UserActionRecentRead(AppBaseModel):
+    id: int
+    user_id: int | None
+    template_id: int | None
+    category_id: int | None
+    category_slug: str | None
+    category_title: str | None
+    title: str
+    points: int
+    duration_min: int | None
+    happened_at: datetime
+
+
+class LifeDashboardCategoryPoints(AppBaseModel):
+    category_id: int
+    slug: str
+    title: str
+    points: int
+
+
+class LifeDashboardTodayResponse(AppBaseModel):
+    date: date
+    total_points: int
+    categories: List[LifeDashboardCategoryPoints]
+
+
+class LifeDashboardWeekResponse(AppBaseModel):
+    week_start: date
+    week_end: date
+    total_points: int
+    categories: List[LifeDashboardCategoryPoints]

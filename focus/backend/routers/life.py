@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,11 +11,20 @@ from focus.backend.schemas import (
     ActionTemplateRead,
     UserActionCreate,
     UserActionLogResponse,
+    UserActionRepeatCreate,
+    UserActionRepeatResponse,
+    UserActionRecentRead,
+    LifeDashboardTodayResponse,
+    LifeDashboardWeekResponse,
 )
 from focus.backend.services.life import (
     get_life_categories,
     get_quick_action_templates,
     log_user_action,
+    repeat_user_action,
+    get_recent_user_actions,
+    get_life_dashboard_today,
+    get_life_dashboard_week,
     LifeValidationError,
     LifeNotFoundError,
 )
@@ -53,3 +64,43 @@ async def create_user_action_log(
         raise HTTPException(status_code=400, detail=str(exc))
     except LifeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/actions/repeat", response_model=UserActionRepeatResponse)
+async def create_user_action_repeat(
+    payload: UserActionRepeatCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await repeat_user_action(db, payload=payload)
+    except LifeValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LifeNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/actions/recent", response_model=list[UserActionRecentRead])
+async def read_recent_user_actions(
+    db: AsyncSession = Depends(get_db),
+    user_id: int | None = Query(None, description="optional user id"),
+    limit: int = Query(10, ge=1, le=100, description="max number of recent actions"),
+):
+    return await get_recent_user_actions(db, user_id=user_id, limit=limit)
+
+
+@router.get("/dashboard/today", response_model=LifeDashboardTodayResponse)
+async def read_life_dashboard_today(
+    db: AsyncSession = Depends(get_db),
+    user_id: int | None = Query(None, description="optional user id"),
+    for_date: date | None = Query(None, description="override date YYYY-MM-DD"),
+):
+    return await get_life_dashboard_today(db, user_id=user_id, target_date=for_date)
+
+
+@router.get("/dashboard/week", response_model=LifeDashboardWeekResponse)
+async def read_life_dashboard_week(
+    db: AsyncSession = Depends(get_db),
+    user_id: int | None = Query(None, description="optional user id"),
+    for_date: date | None = Query(None, description="override date YYYY-MM-DD"),
+):
+    return await get_life_dashboard_week(db, user_id=user_id, target_date=for_date)

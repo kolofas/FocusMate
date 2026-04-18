@@ -70,3 +70,19 @@ async def client(engine_and_schema):
         yield c
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def db_session(engine_and_schema):
+    engine, schema = engine_and_schema
+    SessionLocal = async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        autoflush=False,
+        autocommit=False,
+        expire_on_commit=False,
+    )
+    async with SessionLocal() as session:
+        await session.execute(text(f'SET search_path TO "{schema}"'))
+        yield session
+        await session.rollback()
