@@ -37,3 +37,6 @@ node_modules/
 dist/
 focus/web/node_modules/
 focus/web/dist/
+focus/web/*.tsbuildinfo
+focus/web/vite.config.js
+focus/web/vite.config.d.ts

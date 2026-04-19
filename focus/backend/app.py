@@ -2,8 +2,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 import logging
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from .settings import settings
@@ -142,5 +145,13 @@ app.include_router(tasks_router, prefix="/tasks", tags=["tasks"])
 app.include_router(focus_router, prefix="/focus", tags=["focus"])
 app.include_router(life_router, prefix="/life", tags=["life"])
 app.include_router(telegram_router, prefix="/telegram", tags=["telegram"])
+
+WEB_DIST_PATH = Path(__file__).resolve().parents[1] / "web" / "dist"
+if WEB_DIST_PATH.exists():
+    app.mount("/web", StaticFiles(directory=str(WEB_DIST_PATH), html=True), name="web")
+
+    @app.get("/", include_in_schema=False)
+    async def root_redirect_to_web() -> RedirectResponse:
+        return RedirectResponse(url="/web/")
 
 # Base.metadata.create_all(bind=engine)

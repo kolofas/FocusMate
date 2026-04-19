@@ -159,6 +159,7 @@ Main areas (v2 direction):
 - Notes:
   - `focus/web/src/vite-env.d.ts` must exist (`/// <reference types="vite/client" />`), otherwise TS build fails on `import.meta.env`.
   - `VITE_API_BASE_URL` is build-time/runtime env for Vite client.
+  - In prod Docker image, Web UI is built and served by FastAPI at `/web` (root `/` redirects to `/web/` when dist exists).
 
 ## 7) Recent history (from git)
 > Use this to quickly restore context.
