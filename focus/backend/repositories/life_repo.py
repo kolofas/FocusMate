@@ -144,6 +144,44 @@ class LifeRepo:
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
+    async def get_latest_user_action(
+        self, *, user_id: int | None
+    ) -> models.UserAction | None:
+        stmt = (
+            select(models.UserAction)
+            .where(
+                models.UserAction.user_id.is_(None)
+                if user_id is None
+                else models.UserAction.user_id == user_id
+            )
+            .order_by(models.UserAction.happened_at.desc(), models.UserAction.id.desc())
+            .limit(1)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
+    async def get_latest_user_action_between(
+        self,
+        *,
+        user_id: int | None,
+        start_utc: datetime,
+        end_utc: datetime,
+    ) -> models.UserAction | None:
+        stmt = (
+            select(models.UserAction)
+            .where(
+                models.UserAction.happened_at >= start_utc,
+                models.UserAction.happened_at < end_utc,
+                models.UserAction.user_id.is_(None)
+                if user_id is None
+                else models.UserAction.user_id == user_id,
+            )
+            .order_by(models.UserAction.happened_at.desc(), models.UserAction.id.desc())
+            .limit(1)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
     async def sum_progress_points_by_category(
         self,
         *,

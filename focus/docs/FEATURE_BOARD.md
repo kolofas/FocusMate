@@ -159,6 +159,7 @@ C — Planner-центр
 7. Ops/docs
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
     [ ] Зафиксировать сетевой риск текущего сервера (недоступность api.telegram.org:443)
+    [ ] Настроить production-deploy Web UI на сервере (build `focus/web`, раздача `dist`, API proxy/CORS, smoke-check)
 
 ---
 
@@ -193,8 +194,9 @@ Status:
 Status:
 - [x] Read/dashboard API for day/week/recent
 - [x] Fast repeat API (reuse previous action in 1 call)
-- [ ] "Repeat last/yesterday" shortcut endpoint
-- [ ] Web UI wiring for new life endpoints
+- [x] "Repeat last/yesterday" shortcut endpoint
+- [x] Web UI wiring for new life endpoints
+- [ ] UI polish pass (visual hierarchy, compact recent, primary CTA)
 
 ### Sprint 3 — Product polish
 - Onboarding v1 (первые 2 минуты)
@@ -292,6 +294,10 @@ Status:
     Добавили life-dashboard endpoints: `GET /life/dashboard/today`, `GET /life/dashboard/week`.
     Добавили ленту действий `GET /life/actions/recent` и быстрый re-use `POST /life/actions/repeat`.
     Прогнали smoke-check в Postman: `log -> repeat -> dashboard(today/week) -> recent`, ответы стабильные `200 OK`.
+- 2026-04-19 (Sprint 2 / shortcut + web wiring) —
+    Добавили shortcut endpoint `POST /life/actions/repeat-shortcut` (`last`/`yesterday` + optional `reference_date`).
+    Подключили Web UI к life-слою: новый таб `Life`, quick-actions, recent-list, `Repeat last/yesterday` и `Repeat` на последних действиях.
+    Локально проверили работоспособность flow после миграций; на следующий шаг вынесли визуальный polish.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.

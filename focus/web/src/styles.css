@@ -77,7 +77,7 @@ h2 {
 
 .tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -175,6 +175,65 @@ h2 {
 
 .state--error {
   color: var(--danger);
+}
+
+h3 {
+  margin: 18px 0 10px;
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+
+.ghost--small {
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.life-shortcuts {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.life-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.life-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--surface);
+}
+
+.life-card__title {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.life-card__points {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
 }
 
 @media (max-width: 680px) {

@@ -24,10 +24,46 @@ export type FocusToday = {
   items: FocusItem[];
 };
 
+export type LifeActionTemplate = {
+  id: number;
+  category_id: number | null;
+  slug: string;
+  title: string;
+  default_points: number;
+  default_duration_min: number | null;
+  is_active: boolean;
+};
+
+export type LifeRecentAction = {
+  id: number;
+  user_id: number | null;
+  template_id: number | null;
+  category_id: number | null;
+  category_slug: string | null;
+  category_title: string | null;
+  title: string;
+  points: number;
+  duration_min: number | null;
+  happened_at: string;
+};
+
+export type LifeDashboardCategory = {
+  category_id: number;
+  slug: string;
+  title: string;
+  points: number;
+};
+
+export type LifeDashboardToday = {
+  date: string;
+  total_points: number;
+  categories: LifeDashboardCategory[];
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
-async function request<T>(path: string): Promise<T> {
-  const resp = await fetch(`${API_BASE}${path}`);
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const resp = await fetch(`${API_BASE}${path}`, init);
   const body = await resp.json().catch(() => ({}));
 
   if (!resp.ok) {
@@ -44,6 +80,48 @@ export function getTasks(): Promise<Task[]> {
 
 export function getToday(): Promise<FocusToday> {
   return request<FocusToday>("/focus/today");
+}
+
+export function getLifeQuickActions(): Promise<LifeActionTemplate[]> {
+  return request<LifeActionTemplate[]>("/life/actions/quick");
+}
+
+export function getLifeRecentActions(limit = 8): Promise<LifeRecentAction[]> {
+  return request<LifeRecentAction[]>(`/life/actions/recent?limit=${limit}`);
+}
+
+export function getLifeDashboardToday(): Promise<LifeDashboardToday> {
+  return request<LifeDashboardToday>("/life/dashboard/today");
+}
+
+export function logLifeAction(templateId: number): Promise<{
+  user_action_id: number;
+}> {
+  return request("/life/actions/log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ template_id: templateId }),
+  });
+}
+
+export function repeatLifeAction(userActionId: number): Promise<{
+  user_action_id: number;
+}> {
+  return request("/life/actions/repeat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_action_id: userActionId }),
+  });
+}
+
+export function repeatLifeShortcut(mode: "last" | "yesterday"): Promise<{
+  user_action_id: number;
+}> {
+  return request("/life/actions/repeat-shortcut", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode }),
+  });
 }
 
 export function formatDate(value: string | null): string {

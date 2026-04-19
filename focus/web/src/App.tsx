@@ -1,28 +1,57 @@
 import { useEffect, useMemo, useState } from "react";
-import { FocusToday, Task, formatDate, getTasks, getToday } from "./lib/api";
+import {
+  FocusToday,
+  LifeActionTemplate,
+  LifeDashboardToday,
+  LifeRecentAction,
+  Task,
+  formatDate,
+  getLifeDashboardToday,
+  getLifeQuickActions,
+  getLifeRecentActions,
+  getTasks,
+  getToday,
+  logLifeAction,
+  repeatLifeAction,
+  repeatLifeShortcut,
+} from "./lib/api";
 
-type Tab = "all" | "today";
+type Tab = "all" | "today" | "life";
 
 function App() {
   const [tab, setTab] = useState<Tab>("all");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [today, setToday] = useState<FocusToday | null>(null);
+  const [lifeDashboard, setLifeDashboard] = useState<LifeDashboardToday | null>(null);
+  const [quickActions, setQuickActions] = useState<LifeActionTemplate[]>([]);
+  const [recentActions, setRecentActions] = useState<LifeRecentAction[]>([]);
+  const [lifePending, setLifePending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
+    async function loadAll() {
       setLoading(true);
       setError(null);
       try {
-        const [tasksData, todayData] = await Promise.all([getTasks(), getToday()]);
+        const [tasksData, todayData, dashboardData, quickData, recentData] =
+          await Promise.all([
+            getTasks(),
+            getToday(),
+            getLifeDashboardToday(),
+            getLifeQuickActions(),
+            getLifeRecentActions(),
+          ]);
         if (cancelled) {
           return;
         }
         setTasks(tasksData);
         setToday(todayData);
+        setLifeDashboard(dashboardData);
+        setQuickActions(quickData);
+        setRecentActions(recentData);
       } catch (err) {
         if (cancelled) {
           return;
@@ -35,7 +64,7 @@ function App() {
       }
     }
 
-    load();
+    loadAll();
 
     return () => {
       cancelled = true;
@@ -43,6 +72,55 @@ function App() {
   }, []);
 
   const todayTasks = useMemo(() => today?.items ?? [], [today]);
+  const lifeCategories = useMemo(() => lifeDashboard?.categories ?? [], [lifeDashboard]);
+
+  async function refreshLifeData() {
+    const [dashboardData, recentData] = await Promise.all([
+      getLifeDashboardToday(),
+      getLifeRecentActions(),
+    ]);
+    setLifeDashboard(dashboardData);
+    setRecentActions(recentData);
+  }
+
+  async function onQuickAction(templateId: number) {
+    setLifePending(true);
+    setError(null);
+    try {
+      await logLifeAction(templateId);
+      await refreshLifeData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось записать действие");
+    } finally {
+      setLifePending(false);
+    }
+  }
+
+  async function onRepeatAction(userActionId: number) {
+    setLifePending(true);
+    setError(null);
+    try {
+      await repeatLifeAction(userActionId);
+      await refreshLifeData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось повторить действие");
+    } finally {
+      setLifePending(false);
+    }
+  }
+
+  async function onRepeatShortcut(mode: "last" | "yesterday") {
+    setLifePending(true);
+    setError(null);
+    try {
+      await repeatLifeShortcut(mode);
+      await refreshLifeData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось выполнить shortcut");
+    } finally {
+      setLifePending(false);
+    }
+  }
 
   return (
     <main className="page">
@@ -69,6 +147,12 @@ function App() {
             onClick={() => setTab("today")}
           >
             Today
+          </button>
+          <button
+            className={tab === "life" ? "tab tab--active" : "tab"}
+            onClick={() => setTab("life")}
+          >
+            Life
           </button>
         </nav>
 
@@ -113,6 +197,76 @@ function App() {
                 </li>
               ))}
               {todayTasks.length === 0 && <li className="state">На сегодня задач нет</li>}
+            </ul>
+          </section>
+        )}
+
+        {!loading && !error && tab === "life" && (
+          <section className="panel">
+            <h2>Life today {lifeDashboard ? `• ${lifeDashboard.date}` : ""}</h2>
+
+            <div className="life-shortcuts">
+              <button
+                className="ghost"
+                onClick={() => onRepeatShortcut("last")}
+                disabled={lifePending}
+              >
+                Repeat last
+              </button>
+              <button
+                className="ghost"
+                onClick={() => onRepeatShortcut("yesterday")}
+                disabled={lifePending}
+              >
+                Repeat yesterday
+              </button>
+            </div>
+
+            <div className="life-grid">
+              {lifeCategories.map((category) => (
+                <article key={category.category_id} className="life-card">
+                  <p className="life-card__title">{category.title}</p>
+                  <p className="life-card__points">{category.points} pts</p>
+                </article>
+              ))}
+            </div>
+
+            <h3>Quick actions</h3>
+            <div className="quick-actions">
+              {quickActions.map((action) => (
+                <button
+                  key={action.id}
+                  className="quick-btn"
+                  onClick={() => onQuickAction(action.id)}
+                  disabled={lifePending}
+                >
+                  {action.title}
+                </button>
+              ))}
+            </div>
+
+            <h3>Recent</h3>
+            <ul className="list">
+              {recentActions.map((action) => (
+                <li key={action.id} className="item">
+                  <div className="item__main">
+                    <strong>{action.title}</strong>
+                    <button
+                      className="ghost ghost--small"
+                      onClick={() => onRepeatAction(action.id)}
+                      disabled={lifePending}
+                    >
+                      Repeat
+                    </button>
+                  </div>
+                  <div className="item__meta">
+                    <span>category: {action.category_title ?? "-"}</span>
+                    <span>points: {action.points}</span>
+                    <span>{formatDate(action.happened_at)}</span>
+                  </div>
+                </li>
+              ))}
+              {recentActions.length === 0 && <li className="state">Пока нет действий</li>}
             </ul>
           </section>
         )}

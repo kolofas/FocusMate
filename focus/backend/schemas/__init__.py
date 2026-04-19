@@ -104,6 +104,13 @@ class UserActionRepeatResponse(UserActionLogResponse):
     repeated_from_action_id: int
 
 
+class UserActionRepeatShortcutCreate(AppBaseModel):
+    mode: str  # last | yesterday
+    user_id: int | None = None
+    happened_at: datetime | None = None
+    reference_date: date | None = None
+
+
 class UserActionRecentRead(AppBaseModel):
     id: int
     user_id: int | None

@@ -12,6 +12,7 @@ from focus.backend.schemas import (
     UserActionCreate,
     UserActionLogResponse,
     UserActionRepeatCreate,
+    UserActionRepeatShortcutCreate,
     UserActionRepeatResponse,
     UserActionRecentRead,
     LifeDashboardTodayResponse,
@@ -22,6 +23,7 @@ from focus.backend.services.life import (
     get_quick_action_templates,
     log_user_action,
     repeat_user_action,
+    repeat_user_action_shortcut,
     get_recent_user_actions,
     get_life_dashboard_today,
     get_life_dashboard_week,
@@ -73,6 +75,19 @@ async def create_user_action_repeat(
 ):
     try:
         return await repeat_user_action(db, payload=payload)
+    except LifeValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LifeNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/actions/repeat-shortcut", response_model=UserActionRepeatResponse)
+async def create_user_action_repeat_shortcut(
+    payload: UserActionRepeatShortcutCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await repeat_user_action_shortcut(db, payload=payload)
     except LifeValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except LifeNotFoundError as exc:

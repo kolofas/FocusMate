@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-04-18
+> Updated: 2026-04-19
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
@@ -83,6 +83,7 @@ Main areas (v2 direction):
 ### Now (1–2 weeks)
 - [x] Keep PROJECT_MAP always updated after sessions
 - [ ] Make production runbook (start/stop/logs/health/migrate)
+- [ ] Configure Web UI production deploy on server (`focus/web` build, static hosting, API proxy/CORS, smoke)
 - [x] Tighten module boundaries in `services/telegram/` (if needed)
 - [x] Task Edit MVP v1 (title/status/deadline commands in Telegram)
 - [x] Reminders MVP (set/cancel/deliver)
@@ -107,8 +108,9 @@ Main areas (v2 direction):
       - [x] `GET /life/dashboard/week`
       - [x] `GET /life/actions/recent`
       - [x] `POST /life/actions/repeat`
-      - [ ] shortcut `repeat last/yesterday`
-      - [ ] web wiring + UX for fast repeat
+      - [x] shortcut `repeat last/yesterday` (`POST /life/actions/repeat-shortcut`)
+      - [x] web wiring + UX for fast repeat (`Life` tab + quick/repeat actions)
+      - [ ] UI polish pass
     - [ ] Sprint 3: onboarding + unlocks + polish (without heavy gamification/social)
 
 ### Requested backlog (from FocusMate tasks)
@@ -133,11 +135,30 @@ Main areas (v2 direction):
 > Keep this short and practical.
 
 - Deploy method:
+  - Push to `main` -> GitHub Actions CI/CD builds backend image and deploys app stack.
 - Restart services:
+  - `docker compose -f focus/docker-compose.yml up -d --force-recreate app`
 - View logs:
+  - `docker logs -f --tail 200 focusmate-app-1`
 - Healthcheck endpoint:
+  - `GET /health/ping`
+  - `GET /health/db`
 - Run migrations:
+  - Local: `set -a; source ./.env; set +a; alembic upgrade head`
+  - Server/container: run `alembic upgrade head` with prod env vars before/after app rollout (depending on migration safety).
 - Rollback:
+  - Re-deploy previous successful image tag from CI/CD or `docker compose` with previous image.
+
+### Web UI build/check (local)
+- Install deps:
+  - `cd focus/web && npm ci`
+- Build:
+  - `npm run build`
+- Dev run (explicit API base):
+  - `VITE_API_BASE_URL=http://127.0.0.1:8000 npm run dev`
+- Notes:
+  - `focus/web/src/vite-env.d.ts` must exist (`/// <reference types="vite/client" />`), otherwise TS build fails on `import.meta.env`.
+  - `VITE_API_BASE_URL` is build-time/runtime env for Vite client.
 
 ## 7) Recent history (from git)
 > Use this to quickly restore context.
@@ -148,6 +169,7 @@ Main areas (v2 direction):
 - 2026-04-16 — Product direction freeze v2: FocusMate as life-control panel (`action -> category -> visible progress`), 3-sprint plan approved
 - 2026-04-18 — Sprint 1 core implemented: added life domain models+migrations and core `/life` endpoints (`categories`, `actions/quick`, `actions/log`); smoke-checked in Postman
 - 2026-04-18 — Sprint 2 API in progress: added `/life/dashboard/today`, `/life/dashboard/week`, `/life/actions/recent`, `/life/actions/repeat`; smoke-checked via Postman (`200 OK`)
+- 2026-04-19 — Sprint 2 continuation: added `/life/actions/repeat-shortcut` and wired Web `Life` screen to `/life` endpoints (quick/repeat/recent/dashboard); local smoke completed
 - 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod

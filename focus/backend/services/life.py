@@ -16,6 +16,7 @@ from focus.backend.schemas import (
     UserActionCreate,
     UserActionLogResponse,
     UserActionRepeatCreate,
+    UserActionRepeatShortcutCreate,
     UserActionRepeatResponse,
     UserActionRecentRead,
 )
@@ -82,6 +83,14 @@ def _local_week_bounds_utc(target_date: date) -> tuple[datetime, datetime]:
     start_utc, _ = _local_day_bounds_utc(week_start)
     end_utc, _ = _local_day_bounds_utc(week_end_exclusive)
     return start_utc, end_utc
+
+
+def _local_yesterday_bounds_utc(
+    target_date: date | None = None,
+) -> tuple[datetime, datetime]:
+    base_day = target_date or datetime.now(_resolve_app_tz()).date()
+    yesterday = base_day - timedelta(days=1)
+    return _local_day_bounds_utc(yesterday)
 
 
 def _build_dashboard_categories(
@@ -388,6 +397,39 @@ async def repeat_user_action(
         category_id=source.category_id,
         delta_points=source.points,
         repeated_from_action_id=source.id,
+    )
+
+
+async def repeat_user_action_shortcut(
+    db: AsyncSession,
+    *,
+    payload: UserActionRepeatShortcutCreate,
+) -> UserActionRepeatResponse:
+    await _ensure_seeded(db, user_id=payload.user_id)
+    repo = LifeRepo(db)
+
+    if payload.mode == "last":
+        source = await repo.get_latest_user_action(user_id=payload.user_id)
+    elif payload.mode == "yesterday":
+        start_utc, end_utc = _local_yesterday_bounds_utc(payload.reference_date)
+        source = await repo.get_latest_user_action_between(
+            user_id=payload.user_id,
+            start_utc=start_utc,
+            end_utc=end_utc,
+        )
+    else:
+        raise LifeValidationError("mode must be one of: last, yesterday")
+
+    if source is None:
+        raise LifeNotFoundError(f"No source action found for mode={payload.mode}")
+
+    return await repeat_user_action(
+        db,
+        payload=UserActionRepeatCreate(
+            user_action_id=source.id,
+            user_id=payload.user_id,
+            happened_at=payload.happened_at,
+        ),
     )
 
 
