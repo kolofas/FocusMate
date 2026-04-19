@@ -146,17 +146,26 @@ C — Planner-центр
     [x] Экран "Today" (read-only)
     [ ] Быстрая смена статуса
     [ ] Edit title + установка/сброс deadline/reminder
-3. Onboarding v1
+3. Auth & personalization (web-first)
+    [ ] Web auth MVP (session/token) for personal workspace
+    [ ] Bind API requests to current user (remove shared/global web state)
+    [ ] "My data only" smoke-check in prod
+4. Onboarding v1
     [ ] [id:99] Пошаговый "первый запуск" (что делать в первые 2 минуты)
-4. Quality
+    [ ] In-app onboarding hints for Life tab (first 3 actions)
+5. UI/visual polish
+    [ ] Improve visual hierarchy (primary CTA, spacing, contrast)
+    [ ] Compact Recent list + progressive reveal ("Show more")
+    [ ] Mobile readability pass
+6. Quality
     [ ] [id:97] Расширить тесты на core API/use-cases
     [ ] Точечные контрактные тесты для будущего Web UI
-5. Reminders (infra-next)
+7. Reminders (infra-next)
     [ ] Вынести delivery в Redis worker после стабилизации базового MVP
-6. Telegram compatibility (без блокировки спринта)
+8. Telegram compatibility (без блокировки спринта)
     [ ] [id:98] Кнопки смены статуса в Telegram
     [ ] [id:24] Реализовать "Индекс элементов запроса +1"
-7. Ops/docs
+9. Ops/docs
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
     [ ] Зафиксировать сетевой риск текущего сервера (недоступность api.telegram.org:443)
     [ ] Настроить production-deploy Web UI на сервере (build `focus/web`, раздача `dist`, API proxy/CORS, smoke-check)
@@ -199,7 +208,9 @@ Status:
 - [ ] UI polish pass (visual hierarchy, compact recent, primary CTA)
 
 ### Sprint 3 — Product polish
+- Auth + personal workspace for web
 - Onboarding v1 (первые 2 минуты)
+- UI polish pass (clarity first, then aesthetics)
 - Простые unlock-механики (без магазина)
 - Подсветка перекосов и базовые рекомендации
 - Beta-ready smoke + регрессия
@@ -298,6 +309,10 @@ Status:
     Добавили shortcut endpoint `POST /life/actions/repeat-shortcut` (`last`/`yesterday` + optional `reference_date`).
     Подключили Web UI к life-слою: новый таб `Life`, quick-actions, recent-list, `Repeat last/yesterday` и `Repeat` на последних действиях.
     Локально проверили работоспособность flow после миграций; на следующий шаг вынесли визуальный polish.
+- 2026-04-20 (planning update) —
+    После первого production запуска Web UI зафиксировали следующую приоритетную волну:
+    `Auth/Personalization -> Onboarding -> UI polish`.
+    Добавили отдельный `DEVELOPMENT_FLOW.md` для дисциплины веток, атомарных PR и стабильного merge в `main`.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.

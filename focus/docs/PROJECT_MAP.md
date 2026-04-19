@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-04-19
+> Updated: 2026-04-20
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
@@ -48,6 +48,7 @@ Main areas (v2 direction):
 - `focus/docs/roadmap.md`
 - `focus/docs/concept.md`
 - `focus/docs/development_diary.md` (historical; prefer development_diary_v2.md)
+- `DEVELOPMENT_FLOW.md` - practical branching/checklist workflow
 
 ## 3) Runtime map (how it works)
 - Routers: `routers/tasks.py`, `routers/focus.py`, `routers/inbox.py`, `routers/telegram.py`, `routers/health.py`
@@ -112,6 +113,9 @@ Main areas (v2 direction):
       - [x] web wiring + UX for fast repeat (`Life` tab + quick/repeat actions)
       - [ ] UI polish pass
     - [ ] Sprint 3: onboarding + unlocks + polish (without heavy gamification/social)
+      - [ ] Web auth MVP (session/token) + personal workspace binding
+      - [ ] Onboarding v1 for first-time web users
+      - [ ] UI polish pass (hierarchy, compact feed, mobile readability)
 
 ### Requested backlog (from FocusMate tasks)
 - [ ] [id:23] Implement reminder setup
@@ -171,6 +175,7 @@ Main areas (v2 direction):
 - 2026-04-18 — Sprint 1 core implemented: added life domain models+migrations and core `/life` endpoints (`categories`, `actions/quick`, `actions/log`); smoke-checked in Postman
 - 2026-04-18 — Sprint 2 API in progress: added `/life/dashboard/today`, `/life/dashboard/week`, `/life/actions/recent`, `/life/actions/repeat`; smoke-checked via Postman (`200 OK`)
 - 2026-04-19 — Sprint 2 continuation: added `/life/actions/repeat-shortcut` and wired Web `Life` screen to `/life` endpoints (quick/repeat/recent/dashboard); local smoke completed
+- 2026-04-20 — Planning refinement: prioritize next wave as `Auth/Personalization -> Onboarding -> UI polish`; added `DEVELOPMENT_FLOW.md` for stable branch/merge discipline
 - 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod
