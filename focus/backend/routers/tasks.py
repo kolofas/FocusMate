@@ -13,6 +13,8 @@ from ..schemas.task_queries import TaskListQuery
 from ..services import tasks
 from ..services.tasks import change_task_status
 from ..services.planner import plan_today
+from ..auth import current_active_user_optional, resolve_scope_user_id
+from focus.backend.database import models
 
 router = APIRouter()
 
@@ -34,14 +36,17 @@ async def list_tasks(
     order_by: str = Query("created_at"),
     direction: str = Query("desc", alias="dir"),
     user_id: int | None = Query(None, description="filter by user"),
+    current_user: models.WebUser | None = Depends(current_active_user_optional),
 ):
     if status and status not in ALLOWED_STATUS:
         raise HTTPException(400, detail="Invalid status")
     if order_by not in ALLOWED_ORDER or direction not in ALLOWED_DIR:
         raise HTTPException(400, detail="Invalid order/dir")
 
+    resolved_user_id = resolve_scope_user_id(current_user, user_id)
+
     query = TaskListQuery(
-        user_id=user_id,
+        user_id=resolved_user_id,
         limit=limit,
         offset=offset,
         status=status,
@@ -66,10 +71,14 @@ async def get_task(task_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/", response_model=TaskRead, status_code=201)
 async def create_task(
-    payload: TaskCreate, response: Response, db: AsyncSession = Depends(get_db)
+    payload: TaskCreate,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.WebUser | None = Depends(current_active_user_optional),
 ):
+    resolved_user_id = resolve_scope_user_id(current_user, None)
     try:
-        obj = await tasks.create_task(db, payload)
+        obj = await tasks.create_task(db, payload, user_id=resolved_user_id)
     except Exception:
         await db.rollback()
         raise
@@ -80,10 +89,14 @@ async def create_task(
 
 @router.patch("/{task_id}", response_model=TaskRead)
 async def update_task(
-    task_id: int, payload: TaskUpdate, db: AsyncSession = Depends(get_db)
+    task_id: int,
+    payload: TaskUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.WebUser | None = Depends(current_active_user_optional),
 ):
+    resolved_user_id = resolve_scope_user_id(current_user, None)
     try:
-        obj = await tasks.update_task(db, task_id, payload)
+        obj = await tasks.update_task(db, task_id, payload, user_id=resolved_user_id)
     except Exception:
         await db.rollback()
         raise
@@ -94,9 +107,14 @@ async def update_task(
 
 
 @router.delete("/{task_id}", status_code=204)
-async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_task(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.WebUser | None = Depends(current_active_user_optional),
+):
+    resolved_user_id = resolve_scope_user_id(current_user, None)
     try:
-        ok = await tasks.delete_task(db, task_id)
+        ok = await tasks.delete_task(db, task_id, user_id=resolved_user_id)
     except Exception:
         await db.rollback()
         raise
@@ -107,10 +125,18 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/{task_id}/status", response_model=TaskRead)
 async def change_status(
-    task_id: int, payload: StatusChange, db: AsyncSession = Depends(get_db)
+    task_id: int,
+    payload: StatusChange,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.WebUser | None = Depends(current_active_user_optional),
 ):
+    resolved_user_id = resolve_scope_user_id(current_user, None)
     repo = TaskRepo(db)
-    obj = await repo.get_by_id(task_id)
+    obj = (
+        await repo.get_user_task(task_id=task_id, user_id=resolved_user_id)
+        if resolved_user_id is not None
+        else await repo.get_by_id(task_id)
+    )
     if not obj:
         raise HTTPException(404, detail="Task not found")
 

@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     telegram_mode: str = "webhook"  # "webhook" | "polling"
     telegram_log_updates: bool = True
     web_cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    auth_jwt_secret: str = "CHANGE_ME_DEV_ONLY"
+    auth_jwt_lifetime_seconds: int = 60 * 60 * 24 * 7
 
     model_config = SettingsConfigDict(env_file=ENV_PATH, extra="ignore")
 

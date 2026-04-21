@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  AuthUser,
+  clearToken,
   FocusToday,
   LifeActionTemplate,
   LifeDashboardToday,
   LifeRecentAction,
   Task,
   formatDate,
+  getMe,
   getLifeDashboardToday,
   getLifeQuickActions,
   getLifeRecentActions,
   getTasks,
   getToday,
+  login,
   logLifeAction,
+  register,
   repeatLifeAction,
   repeatLifeShortcut,
 } from "./lib/api";
@@ -20,6 +25,11 @@ type Tab = "all" | "today" | "life";
 
 function App() {
   const [tab, setTab] = useState<Tab>("all");
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authPending, setAuthPending] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [today, setToday] = useState<FocusToday | null>(null);
   const [lifeDashboard, setLifeDashboard] = useState<LifeDashboardToday | null>(null);
@@ -32,10 +42,16 @@ function App() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadAll() {
+    async function bootstrap() {
       setLoading(true);
       setError(null);
       try {
+        const me = await getMe();
+        if (cancelled) {
+          return;
+        }
+        setAuthUser(me);
+
         const [tasksData, todayData, dashboardData, quickData, recentData] =
           await Promise.all([
             getTasks(),
@@ -56,7 +72,10 @@ function App() {
         if (cancelled) {
           return;
         }
-        setError(err instanceof Error ? err.message : "Не удалось загрузить данные");
+        const message = err instanceof Error ? err.message : "Не удалось загрузить данные";
+        if (!message.includes("401")) {
+          setError(message);
+        }
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -64,7 +83,7 @@ function App() {
       }
     }
 
-    loadAll();
+    bootstrap();
 
     return () => {
       cancelled = true;
@@ -122,6 +141,50 @@ function App() {
     }
   }
 
+  async function reloadData() {
+    const [tasksData, todayData, dashboardData, quickData, recentData] =
+      await Promise.all([
+        getTasks(),
+        getToday(),
+        getLifeDashboardToday(),
+        getLifeQuickActions(),
+        getLifeRecentActions(),
+      ]);
+    setTasks(tasksData);
+    setToday(todayData);
+    setLifeDashboard(dashboardData);
+    setQuickActions(quickData);
+    setRecentActions(recentData);
+  }
+
+  async function onSubmitAuth() {
+    setAuthPending(true);
+    setError(null);
+    try {
+      if (authMode === "register") {
+        await register(email.trim(), password);
+      }
+      await login(email.trim(), password);
+      const me = await getMe();
+      setAuthUser(me);
+      await reloadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Auth failed");
+    } finally {
+      setAuthPending(false);
+    }
+  }
+
+  function onLogout() {
+    clearToken();
+    setAuthUser(null);
+    setTasks([]);
+    setToday(null);
+    setLifeDashboard(null);
+    setQuickActions([]);
+    setRecentActions([]);
+  }
+
   return (
     <main className="page">
       <section className="shell">
@@ -130,11 +193,55 @@ function App() {
             <p className="eyebrow">FocusMate Web MVP</p>
             <h1>Clean Focus Board</h1>
           </div>
-          <button className="ghost" onClick={() => window.location.reload()}>
-            Refresh
-          </button>
+          {authUser ? (
+            <div>
+              <button className="ghost" onClick={() => window.location.reload()}>
+                Refresh
+              </button>
+              <button className="ghost" onClick={onLogout}>
+                Logout
+              </button>
+            </div>
+          ) : null}
         </header>
 
+        {!authUser && (
+          <section className="panel">
+            <h2>{authMode === "login" ? "Login" : "Register"}</h2>
+            <div className="quick-actions">
+              <input
+                className="quick-btn"
+                type="email"
+                value={email}
+                placeholder="email"
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={authPending}
+              />
+              <input
+                className="quick-btn"
+                type="password"
+                value={password}
+                placeholder="password"
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={authPending}
+              />
+              <button className="quick-btn" onClick={onSubmitAuth} disabled={authPending}>
+                {authMode === "login" ? "Sign in" : "Create account"}
+              </button>
+              <button
+                className="ghost"
+                onClick={() =>
+                  setAuthMode((prev) => (prev === "login" ? "register" : "login"))
+                }
+                disabled={authPending}
+              >
+                {authMode === "login" ? "Switch to register" : "Switch to login"}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {authUser && (
         <nav className="tabs" aria-label="View selector">
           <button
             className={tab === "all" ? "tab tab--active" : "tab"}
@@ -155,11 +262,12 @@ function App() {
             Life
           </button>
         </nav>
+        )}
 
         {loading && <p className="state">Загрузка...</p>}
         {error && <p className="state state--error">{error}</p>}
 
-        {!loading && !error && tab === "all" && (
+        {!!authUser && !loading && !error && tab === "all" && (
           <section className="panel">
             <h2>All tasks</h2>
             <ul className="list">
@@ -179,7 +287,7 @@ function App() {
           </section>
         )}
 
-        {!loading && !error && tab === "today" && (
+        {!!authUser && !loading && !error && tab === "today" && (
           <section className="panel">
             <h2>Today {today ? `• ${today.date}` : ""}</h2>
             <ul className="list">
@@ -201,7 +309,7 @@ function App() {
           </section>
         )}
 
-        {!loading && !error && tab === "life" && (
+        {!!authUser && !loading && !error && tab === "life" && (
           <section className="panel">
             <h2>Life today {lifeDashboard ? `• ${lifeDashboard.date}` : ""}</h2>
 

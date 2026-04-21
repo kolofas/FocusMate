@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-04-20
+> Updated: 2026-04-23
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
@@ -92,7 +92,10 @@ Main areas (v2 direction):
 - [x] Show task deadline/reminder on Today screen (visibility for urgency/reminders)
 - [ ] Progress Feedback MVP (`/summary today`, `/summary week`)
 - [x] Expand regression tests for planner consistency + edit/deadline command parsing
-- [ ] Code health: targeted refactor of telegram/services layers (reduce duplication and tighten boundaries)
+- [ ] Code health: targeted refactor budget (no full rewrite)
+  - [x] Scope: only overloaded backend functions that block `Auth + personalization`
+  - [ ] Limit: 1-2 focused sessions before onboarding
+  - [ ] Rule: behavior-preserving refactor (split responsibilities, keep API contracts stable)
 - [ ] Sprint pivot (while Telegram is network-blocked on current server):
   - [x] API/domain hardening: Web UI API contract v1 freeze (`/tasks`, `/focus/today`, `/tasks/{id}/status`)
   - [x] API/domain hardening: reminder write-contract (HTTP)
@@ -113,7 +116,8 @@ Main areas (v2 direction):
       - [x] web wiring + UX for fast repeat (`Life` tab + quick/repeat actions)
       - [ ] UI polish pass
     - [ ] Sprint 3: onboarding + unlocks + polish (without heavy gamification/social)
-      - [ ] Web auth MVP (session/token) + personal workspace binding
+      - [x] Web auth MVP (session/token) + personal workspace binding
+      - [x] Targeted backend refactor (auth-critical overloaded functions only, bounded scope)
       - [ ] Onboarding v1 for first-time web users
       - [ ] UI polish pass (hierarchy, compact feed, mobile readability)
 
@@ -176,6 +180,9 @@ Main areas (v2 direction):
 - 2026-04-18 — Sprint 2 API in progress: added `/life/dashboard/today`, `/life/dashboard/week`, `/life/actions/recent`, `/life/actions/repeat`; smoke-checked via Postman (`200 OK`)
 - 2026-04-19 — Sprint 2 continuation: added `/life/actions/repeat-shortcut` and wired Web `Life` screen to `/life` endpoints (quick/repeat/recent/dashboard); local smoke completed
 - 2026-04-20 — Planning refinement: prioritize next wave as `Auth/Personalization -> Onboarding -> UI polish`; added `DEVELOPMENT_FLOW.md` for stable branch/merge discipline
+- 2026-04-21 — Refactor strategy clarified: no full-project rewrite before onboarding; use bounded `refactor budget` (1-2 sessions) only for auth-critical overloaded backend functions
+- 2026-04-23 — Auth/personalization MVP completed for Web: `fastapi-users` auth routes, `web_users` + personal workspace binding, web login/register flow, and regression coverage (`test_web_auth_personalization`)
+- 2026-04-23 — Stability fix: made life seeding race-safe (`_ensure_seeded`) to prevent duplicate category insert collisions under concurrent requests
 - 2026-04-09 — Reminders MVP v1 (set/clear + timezone-aware parsing) + app-process APScheduler delivery; infra-next fixed to Redis worker
 - 2026-03-31 — Planner consistency fix + real replan; `/edit` + `/deadline` commands; Today action confirmations; `/refresh` alias; tests to 20 passed
 - 2026-03-26 — Telegram UX stabilization: single-screen callbacks, del_no fix, unified Back, UX-contract tests, deployed and smoke-checked in prod

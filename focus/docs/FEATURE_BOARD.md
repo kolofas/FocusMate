@@ -147,25 +147,29 @@ C — Planner-центр
     [ ] Быстрая смена статуса
     [ ] Edit title + установка/сброс deadline/reminder
 3. Auth & personalization (web-first)
-    [ ] Web auth MVP (session/token) for personal workspace
-    [ ] Bind API requests to current user (remove shared/global web state)
+    [x] Web auth MVP (session/token) for personal workspace
+    [x] Bind API requests to current user (remove shared/global web state)
     [ ] "My data only" smoke-check in prod
-4. Onboarding v1
+4. Targeted refactor budget (before onboarding, no full rewrite)
+    [x] 1-2 focused sessions only on overloaded backend functions that block auth/personalization
+    [x] Split responsibilities (validation/repo/orchestration), keep behavior and API contracts unchanged
+    [x] Add/adjust focused regression tests for touched flows
+5. Onboarding v1
     [ ] [id:99] Пошаговый "первый запуск" (что делать в первые 2 минуты)
     [ ] In-app onboarding hints for Life tab (first 3 actions)
-5. UI/visual polish
+6. UI/visual polish
     [ ] Improve visual hierarchy (primary CTA, spacing, contrast)
     [ ] Compact Recent list + progressive reveal ("Show more")
     [ ] Mobile readability pass
-6. Quality
+7. Quality
     [ ] [id:97] Расширить тесты на core API/use-cases
     [ ] Точечные контрактные тесты для будущего Web UI
-7. Reminders (infra-next)
+8. Reminders (infra-next)
     [ ] Вынести delivery в Redis worker после стабилизации базового MVP
-8. Telegram compatibility (без блокировки спринта)
+9. Telegram compatibility (без блокировки спринта)
     [ ] [id:98] Кнопки смены статуса в Telegram
     [ ] [id:24] Реализовать "Индекс элементов запроса +1"
-9. Ops/docs
+10. Ops/docs
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
     [ ] Зафиксировать сетевой риск текущего сервера (недоступность api.telegram.org:443)
     [ ] Настроить production-deploy Web UI на сервере (build `focus/web`, раздача `dist`, API proxy/CORS, smoke-check)
@@ -313,6 +317,14 @@ Status:
     После первого production запуска Web UI зафиксировали следующую приоритетную волну:
     `Auth/Personalization -> Onboarding -> UI polish`.
     Добавили отдельный `DEVELOPMENT_FLOW.md` для дисциплины веток, атомарных PR и стабильного merge в `main`.
+- 2026-04-21 (refactor policy update) —
+    Уточнили подход к рефакторингу: перед Onboarding не делаем полный рефактор проекта.
+    Фиксируем ограниченный `refactor budget` (1-2 сессии) только для перегруженных backend-функций, критичных для `Auth/Personalization`.
+    Порядок работ закреплен как: `Auth/Personalization -> targeted refactor -> Onboarding -> UI polish`.
+- 2026-04-23 (auth/personalization + stability update) —
+    Закрыли Web auth/personalization MVP: подключили `fastapi-users`, добавили `web_users`, привязали Web scope к персональному workspace (`telegram_user_id`) и подключили login/register/logout в Web UI.
+    Добавили регрессионный тест `test_web_auth_personalization` и подтвердили запись life-действий в персональный `user_id` (без `NULL` shared-scope).
+    Устранили race-condition в life seed (`_ensure_seeded`), который вызывал редкие `500` при конкурентных запросах.
 - 2026-03-26 —
     Закрыли UX-стабилизацию Telegram v1: callback-сценарии держат один экран (edit вместо спама).
     Починили del_no и унифицировали Back-навигацию на today_refresh.
