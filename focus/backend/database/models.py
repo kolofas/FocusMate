@@ -13,6 +13,7 @@ from sqlalchemy import (
     Date,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from fastapi_users.db import SQLAlchemyBaseUserTable
 
 Base = declarative_base()
 
@@ -145,6 +146,24 @@ class TelegramUser(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     screen_message_id = Column(Integer, nullable=True)
+
+
+class WebUser(SQLAlchemyBaseUserTable[int], Base):
+    __tablename__ = "web_users"
+
+    id = Column(Integer, primary_key=True)
+    telegram_user_id = Column(
+        Integer, ForeignKey("telegram_users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("email", name="uq_web_users_email"),
+        UniqueConstraint("telegram_user_id", name="ux_web_users_telegram_user_id"),
+        Index("ix_web_users_telegram_user_id", "telegram_user_id"),
+    )
 
 
 class LifeCategory(Base):

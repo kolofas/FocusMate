@@ -60,10 +60,41 @@ export type LifeDashboardToday = {
   categories: LifeDashboardCategory[];
 };
 
+export type AuthUser = {
+  id: number;
+  email: string;
+  is_active: boolean;
+  is_superuser: boolean;
+  is_verified: boolean;
+  telegram_user_id: number | null;
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+const TOKEN_KEY = "focusmate_token";
+
+function getToken(): string | null {
+  return window.localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  window.localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  window.localStorage.removeItem(TOKEN_KEY);
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(`${API_BASE}${path}`, init);
+  const headers = new Headers(init?.headers ?? {});
+  const token = getToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const resp = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers,
+  });
   const body = await resp.json().catch(() => ({}));
 
   if (!resp.ok) {
@@ -92,6 +123,35 @@ export function getLifeRecentActions(limit = 8): Promise<LifeRecentAction[]> {
 
 export function getLifeDashboardToday(): Promise<LifeDashboardToday> {
   return request<LifeDashboardToday>("/life/dashboard/today");
+}
+
+export async function login(email: string, password: string): Promise<void> {
+  const body = new URLSearchParams();
+  body.set("username", email);
+  body.set("password", password);
+  const resp = await fetch(`${API_BASE}/auth/jwt/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data?.access_token) {
+    const message = data?.error?.message ?? "Login failed";
+    throw new Error(message);
+  }
+  setToken(data.access_token);
+}
+
+export async function register(email: string, password: string): Promise<void> {
+  await request<AuthUser>("/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function getMe(): Promise<AuthUser> {
+  return request<AuthUser>("/users/me");
 }
 
 export function logLifeAction(templateId: number): Promise<{

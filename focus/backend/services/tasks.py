@@ -68,10 +68,13 @@ async def change_task_status(task: models.Task, new_status: TaskStatus) -> None:
 async def create_task(
     db: AsyncSession,
     payload: TaskCreate,
+    *,
+    user_id: int | None = None,
 ) -> models.Task:
     repo = TaskRepo(db)
 
     task = models.Task(
+        user_id=user_id,
         title=(payload.title or "").strip(),
         description=((payload.description or "")[:MAX_DESC_LEN]),
         source=(payload.source or "manual"),
@@ -92,10 +95,16 @@ async def update_task(
     db: AsyncSession,
     task_id: int,
     payload: TaskUpdate,
+    *,
+    user_id: int | None = None,
 ) -> models.Task | None:
     repo = TaskRepo(db)
 
-    task = await repo.get_by_id(task_id)
+    task = (
+        await repo.get_user_task(task_id=task_id, user_id=user_id)
+        if user_id is not None
+        else await repo.get_by_id(task_id)
+    )
     if not task:
         return None
 
@@ -125,10 +134,16 @@ async def update_task(
 async def delete_task(
     db: AsyncSession,
     task_id: int,
+    *,
+    user_id: int | None = None,
 ) -> bool:
     repo = TaskRepo(db)
 
-    task = await repo.get_by_id(task_id)
+    task = (
+        await repo.get_user_task(task_id=task_id, user_id=user_id)
+        if user_id is not None
+        else await repo.get_by_id(task_id)
+    )
     if not task:
         return False
 

@@ -17,6 +17,13 @@ from .routers.focus import router as focus_router
 from .routers.life import router as life_router
 from .routers.telegram import router as telegram_router
 from .services.reminders import send_due_reminders_once
+from .auth import (
+    auth_backend,
+    fastapi_users,
+    UserRead,
+    UserCreate,
+    UserUpdate,
+)
 
 
 logging.basicConfig(
@@ -140,6 +147,19 @@ async def handle_validation_error(
 
 
 app.include_router(health_router, prefix="/health", tags=["health"])
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["users"],
+)
 app.include_router(inbox_router, prefix="/inbox", tags=["inbox"])
 app.include_router(tasks_router, prefix="/tasks", tags=["tasks"])
 app.include_router(focus_router, prefix="/focus", tags=["focus"])

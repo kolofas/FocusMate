@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from focus.backend.database import models
 from focus.backend.repositories.life_repo import LifeRepo
@@ -128,26 +129,34 @@ async def _ensure_seeded(db: AsyncSession, *, user_id: int | None) -> None:
         categories.append(category)
         by_slug[slug] = category
 
-    repo.add_categories(categories)
-    await db.flush()
+    try:
+        repo.add_categories(categories)
+        await db.flush()
 
-    templates: list[models.ActionTemplate] = []
-    for category_slug, title, points, duration in _DEFAULT_ACTION_TEMPLATES:
-        category = by_slug[category_slug]
-        templates.append(
-            models.ActionTemplate(
-                user_id=user_id,
-                category_id=category.id,
-                slug=_slugify(title),
-                title=title,
-                default_points=points,
-                default_duration_min=duration,
-                is_active=True,
+        templates: list[models.ActionTemplate] = []
+        for category_slug, title, points, duration in _DEFAULT_ACTION_TEMPLATES:
+            category = by_slug[category_slug]
+            templates.append(
+                models.ActionTemplate(
+                    user_id=user_id,
+                    category_id=category.id,
+                    slug=_slugify(title),
+                    title=title,
+                    default_points=points,
+                    default_duration_min=duration,
+                    is_active=True,
+                )
             )
-        )
 
-    repo.add_action_templates(templates)
-    await db.commit()
+        repo.add_action_templates(templates)
+        await db.commit()
+    except IntegrityError:
+        # Race-safe seeding: a concurrent request may create the same defaults first.
+        await db.rollback()
+        existing_categories = await repo.list_categories(user_id=user_id)
+        if existing_categories:
+            return
+        raise
 
 
 async def get_life_categories(
