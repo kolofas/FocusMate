@@ -22,9 +22,18 @@ import {
 } from "./lib/api";
 
 type Tab = "all" | "today" | "life";
+type OnboardingStep = {
+  id: "life" | "repeat" | "today";
+  label: string;
+  done: boolean;
+  ctaLabel: string;
+  ctaTab: Tab;
+};
 
 function App() {
   const [tab, setTab] = useState<Tab>("all");
+  const [todayVisited, setTodayVisited] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -92,6 +101,50 @@ function App() {
 
   const todayTasks = useMemo(() => today?.items ?? [], [today]);
   const lifeCategories = useMemo(() => lifeDashboard?.categories ?? [], [lifeDashboard]);
+  const onboardingSteps = useMemo<OnboardingStep[]>(() => {
+    return [
+      {
+        id: "life",
+        label: "Do one quick action in Life",
+        done: recentActions.length > 0,
+        ctaLabel: "Open Life",
+        ctaTab: "life",
+      },
+      {
+        id: "repeat",
+        label: "Use Repeat (last/yesterday or recent)",
+        done: recentActions.length >= 2,
+        ctaLabel: "Open Life",
+        ctaTab: "life",
+      },
+      {
+        id: "today",
+        label: "Check your Today focus list",
+        done: todayVisited,
+        ctaLabel: "Open Today",
+        ctaTab: "today",
+      },
+    ];
+  }, [recentActions.length, tasks.length, todayVisited]);
+
+  const onboardingDoneCount = useMemo(
+    () => onboardingSteps.filter((step) => step.done).length,
+    [onboardingSteps]
+  );
+  const onboardingNextStep = useMemo(
+    () => onboardingSteps.find((step) => !step.done) ?? null,
+    [onboardingSteps]
+  );
+  const onboardingIsComplete = useMemo(
+    () => onboardingDoneCount === onboardingSteps.length,
+    [onboardingDoneCount, onboardingSteps.length]
+  );
+  const showOnboarding = useMemo(() => {
+    if (!authUser || loading || onboardingDismissed) {
+      return false;
+    }
+    return true;
+  }, [authUser, loading, onboardingDismissed]);
 
   async function refreshLifeData() {
     const [dashboardData, recentData] = await Promise.all([
@@ -178,6 +231,8 @@ function App() {
   function onLogout() {
     clearToken();
     setAuthUser(null);
+    setTodayVisited(false);
+    setOnboardingDismissed(false);
     setTasks([]);
     setToday(null);
     setLifeDashboard(null);
@@ -251,7 +306,10 @@ function App() {
           </button>
           <button
             className={tab === "today" ? "tab tab--active" : "tab"}
-            onClick={() => setTab("today")}
+            onClick={() => {
+              setTab("today");
+              setTodayVisited(true);
+            }}
           >
             Today
           </button>
@@ -267,7 +325,53 @@ function App() {
         {loading && <p className="state">Загрузка...</p>}
         {error && <p className="state state--error">{error}</p>}
 
-        {!!authUser && !loading && !error && tab === "all" && (
+        {showOnboarding && (
+          <section className="panel onboarding">
+            <div className="onboarding__top">
+              <h2>First 2 minutes</h2>
+              <span className="onboarding__progress">
+                {onboardingDoneCount}/{onboardingSteps.length}
+              </span>
+            </div>
+            {!onboardingIsComplete && onboardingNextStep ? (
+              <p className="onboarding__next">
+                Current step: <strong>{onboardingNextStep.label}</strong>
+              </p>
+            ) : null}
+            {!onboardingIsComplete && onboardingNextStep ? (
+              <div className="quick-actions">
+                <button
+                  className="quick-btn"
+                  onClick={() => {
+                    setTab(onboardingNextStep.ctaTab);
+                    if (onboardingNextStep.ctaTab === "today") {
+                      setTodayVisited(true);
+                    }
+                  }}
+                >
+                  {onboardingNextStep.ctaLabel}
+                </button>
+              </div>
+            ) : null}
+            {onboardingIsComplete ? (
+              <div className="onboarding__done">
+                <p>Nice start. Your first-run checklist is complete.</p>
+                <button className="ghost" onClick={() => setOnboardingDismissed(true)}>
+                  Hide onboarding
+                </button>
+              </div>
+            ) : null}
+            <ul className="onboarding__checklist">
+              {onboardingSteps.map((step) => (
+                <li key={step.id} className={step.done ? "done" : ""}>
+                  {step.done ? "✓" : "○"} {step.label}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {!!authUser && !loading && tab === "all" && (
           <section className="panel">
             <h2>All tasks</h2>
             <ul className="list">
@@ -287,7 +391,7 @@ function App() {
           </section>
         )}
 
-        {!!authUser && !loading && !error && tab === "today" && (
+        {!!authUser && !loading && tab === "today" && (
           <section className="panel">
             <h2>Today {today ? `• ${today.date}` : ""}</h2>
             <ul className="list">
@@ -309,7 +413,7 @@ function App() {
           </section>
         )}
 
-        {!!authUser && !loading && !error && tab === "life" && (
+        {!!authUser && !loading && tab === "life" && (
           <section className="panel">
             <h2>Life today {lifeDashboard ? `• ${lifeDashboard.date}` : ""}</h2>
 
