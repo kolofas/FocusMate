@@ -144,9 +144,10 @@ C — Planner-центр
     [x] Этап 1: каркас React+Vite+TS + минималистичный UI shell
     [x] Экран "All tasks" (read-only)
     [x] Экран "Today" (read-only)
-    [ ] Добавление задач в Web UI (create task flow)
-    [ ] Улучшение Today-экрана: явное отображение задач/пустого состояния после onboarding
-    [ ] Быстрая смена статуса
+    [x] Добавление задач в Web UI (create task flow)
+    [x] Улучшение Today-экрана: явное отображение задач/пустого состояния после onboarding
+    [x] Пояснение в Today для inbox-only состояния (почему список может быть пуст)
+    [ ] Быстрая смена статуса (deferred: after onboarding scope)
     [ ] Edit title + установка/сброс deadline/reminder
 3. Auth & personalization (web-first)
     [x] Web auth MVP (session/token) for personal workspace
@@ -157,11 +158,11 @@ C — Planner-центр
     [x] Split responsibilities (validation/repo/orchestration), keep behavior and API contracts unchanged
     [x] Add/adjust focused regression tests for touched flows
 5. Onboarding v1
-    [ ] [id:99] Пошаговый "первый запуск" (что делать в первые 2 минуты)
-    [ ] In-app onboarding hints for Life tab (first 3 actions: quick -> repeat -> today)
-    [ ] Guided prompt UX (Codex-like): compact block + one current step + clear CTA
-    [ ] Progress checklist state (`0/3`, `1/3`, `2/3`, `3/3`) based on existing app data
-    [ ] Use only existing flows (no new backend feature scope)
+    [x] [id:99] Пошаговый "первый запуск" (что делать в первые 2 минуты)
+    [x] In-app onboarding hints for Life tab (first 3 actions: quick -> add task -> today)
+    [x] Guided prompt UX (Codex-like): compact block + one current step + clear CTA
+    [x] Progress checklist state (`0/3`, `1/3`, `2/3`, `3/3`) based on existing app data
+    [x] Use only existing flows (no new backend feature scope)
 6. UI/visual polish
     [ ] Improve visual hierarchy (primary CTA, spacing, contrast)
     [ ] Compact Recent list + progressive reveal ("Show more")

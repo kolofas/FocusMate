@@ -109,6 +109,14 @@ export function getTasks(): Promise<Task[]> {
   return request<Task[]>("/tasks/");
 }
 
+export function createTask(title: string): Promise<Task> {
+  return request<Task>("/tasks/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+}
+
 export function getToday(): Promise<FocusToday> {
   return request<FocusToday>("/focus/today");
 }

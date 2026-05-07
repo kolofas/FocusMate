@@ -102,12 +102,12 @@ Main areas (v2 direction):
   - [x] API/domain hardening: unified error-contract (`error.code/message/details`)
   - [ ] Web UI MVP (tasks/today/status/edit/deadline/reminder)
     - [x] Stage 1: frontend skeleton + read-only screens (All/Today)
-    - [ ] Stage 1.5: web task creation flow (add task in UI)
-    - [ ] Stage 1.5: today screen clarity (explicit task visibility + empty-state guidance)
+    - [x] Stage 1.5: web task creation flow (add task in UI)
+    - [x] Stage 1.5: today screen clarity (explicit task visibility + empty-state guidance)
     - [ ] Stage 2: actions (status/edit/deadline/reminder)
   - [ ] Onboarding v1 (first-run clarity)
     - [ ] Guided prompt pattern (Codex-like): one compact top block, step-by-step hints, no heavy modal
-    - [ ] Use only existing functionality (Life quick action -> Repeat -> check Today)
+    - [ ] Use only existing functionality (Life quick action -> Add task -> check Today)
     - [ ] Progressive checklist state (`0/3 -> 3/3`) with skip/dismiss
   - [ ] Test expansion for non-Telegram core paths
   - [ ] Product pivot v2 (life panel model):

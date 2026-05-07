@@ -8,6 +8,7 @@ import {
   LifeRecentAction,
   Task,
   formatDate,
+  createTask,
   getMe,
   getLifeDashboardToday,
   getLifeQuickActions,
@@ -23,7 +24,7 @@ import {
 
 type Tab = "all" | "today" | "life";
 type OnboardingStep = {
-  id: "life" | "repeat" | "today";
+  id: "life" | "task" | "today";
   label: string;
   done: boolean;
   ctaLabel: string;
@@ -45,6 +46,8 @@ function App() {
   const [quickActions, setQuickActions] = useState<LifeActionTemplate[]>([]);
   const [recentActions, setRecentActions] = useState<LifeRecentAction[]>([]);
   const [lifePending, setLifePending] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskPending, setTaskPending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,6 +103,10 @@ function App() {
   }, []);
 
   const todayTasks = useMemo(() => today?.items ?? [], [today]);
+  const inboxTasksCount = useMemo(
+    () => tasks.filter((task) => task.status === "inbox").length,
+    [tasks]
+  );
   const lifeCategories = useMemo(() => lifeDashboard?.categories ?? [], [lifeDashboard]);
   const onboardingSteps = useMemo<OnboardingStep[]>(() => {
     return [
@@ -111,11 +118,11 @@ function App() {
         ctaTab: "life",
       },
       {
-        id: "repeat",
-        label: "Use Repeat (last/yesterday or recent)",
-        done: recentActions.length >= 2,
-        ctaLabel: "Open Life",
-        ctaTab: "life",
+        id: "task",
+        label: "Add one tiny task",
+        done: tasks.length > 0,
+        ctaLabel: "Open Tasks",
+        ctaTab: "all",
       },
       {
         id: "today",
@@ -225,6 +232,28 @@ function App() {
       setError(err instanceof Error ? err.message : "Auth failed");
     } finally {
       setAuthPending(false);
+    }
+  }
+
+  async function onCreateTask() {
+    const title = taskTitle.trim();
+    if (!title) {
+      setError("Введите название задачи");
+      return;
+    }
+
+    setTaskPending(true);
+    setError(null);
+    try {
+      await createTask(title);
+      setTaskTitle("");
+      const [tasksData, todayData] = await Promise.all([getTasks(), getToday()]);
+      setTasks(tasksData);
+      setToday(todayData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось создать задачу");
+    } finally {
+      setTaskPending(false);
     }
   }
 
@@ -374,6 +403,24 @@ function App() {
         {!!authUser && !loading && tab === "all" && (
           <section className="panel">
             <h2>All tasks</h2>
+            <div className="quick-actions create-task">
+              <input
+                className="quick-btn"
+                type="text"
+                value={taskTitle}
+                placeholder="New task title"
+                onChange={(e) => setTaskTitle(e.target.value)}
+                disabled={taskPending}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void onCreateTask();
+                  }
+                }}
+              />
+              <button className="quick-btn" onClick={() => void onCreateTask()} disabled={taskPending}>
+                {taskPending ? "Adding..." : "Add task"}
+              </button>
+            </div>
             <ul className="list">
               {tasks.map((task) => (
                 <li key={task.id} className="item">
@@ -408,7 +455,18 @@ function App() {
                   </div>
                 </li>
               ))}
-              {todayTasks.length === 0 && <li className="state">На сегодня задач нет</li>}
+              {todayTasks.length === 0 && (
+                <li className="state today-empty">
+                  <p>
+                    {inboxTasksCount > 0
+                      ? `На сегодня задач пока нет. В inbox: ${inboxTasksCount}. Переведи задачу в planned, и она появится в Today.`
+                      : "На сегодня задач нет. Добавь одну задачу, чтобы построить список фокуса."}
+                  </p>
+                  <button className="ghost ghost--small" onClick={() => setTab("all")}>
+                    Go to All tasks
+                  </button>
+                </li>
+              )}
             </ul>
           </section>
         )}
