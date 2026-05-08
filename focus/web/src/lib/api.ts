@@ -1,4 +1,9 @@
 export type TaskStatus = "inbox" | "planned" | "done" | "snoozed";
+export type TaskUpdate = {
+  title?: string;
+  deadline?: string | null;
+  reminder_at?: string | null;
+};
 
 export type Task = {
   id: number;
@@ -114,6 +119,22 @@ export function createTask(title: string): Promise<Task> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
+  });
+}
+
+export function changeTaskStatus(taskId: number, status: TaskStatus): Promise<Task> {
+  return request<Task>(`/tasks/${taskId}/status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function updateTask(taskId: number, payload: TaskUpdate): Promise<Task> {
+  return request<Task>(`/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 }
 

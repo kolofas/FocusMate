@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AuthUser,
   clearToken,
+  changeTaskStatus,
   FocusToday,
   LifeActionTemplate,
   LifeDashboardToday,
   LifeRecentAction,
   Task,
+  TaskStatus,
   formatDate,
   createTask,
   getMe,
@@ -20,6 +22,7 @@ import {
   register,
   repeatLifeAction,
   repeatLifeShortcut,
+  updateTask,
 } from "./lib/api";
 
 type Tab = "all" | "today" | "life";
@@ -48,6 +51,12 @@ function App() {
   const [lifePending, setLifePending] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPending, setTaskPending] = useState(false);
+  const [statusPendingTaskId, setStatusPendingTaskId] = useState<number | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editReminder, setEditReminder] = useState("");
+  const [editPendingTaskId, setEditPendingTaskId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -257,6 +266,82 @@ function App() {
     }
   }
 
+  async function onChangeTaskStatus(taskId: number, status: TaskStatus) {
+    setStatusPendingTaskId(taskId);
+    setError(null);
+    try {
+      const updatedTask = await changeTaskStatus(taskId, status);
+      setTasks((prev) =>
+        prev.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+      );
+      const todayData = await getToday();
+      setToday(todayData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось изменить статус");
+    } finally {
+      setStatusPendingTaskId(null);
+    }
+  }
+
+  function toDatetimeLocal(value: string | null): string {
+    if (!value) {
+      return "";
+    }
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) {
+      return "";
+    }
+
+    const year = dt.getFullYear();
+    const month = String(dt.getMonth() + 1).padStart(2, "0");
+    const day = String(dt.getDate()).padStart(2, "0");
+    const hours = String(dt.getHours()).padStart(2, "0");
+    const minutes = String(dt.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  function openEdit(task: Task) {
+    setEditingTaskId(task.id);
+    setEditTitle(task.title);
+    setEditDeadline(toDatetimeLocal(task.deadline));
+    setEditReminder(toDatetimeLocal(task.reminder_at));
+  }
+
+  function closeEdit() {
+    setEditingTaskId(null);
+    setEditTitle("");
+    setEditDeadline("");
+    setEditReminder("");
+  }
+
+  async function onSaveTaskEdit(taskId: number) {
+    const title = editTitle.trim();
+    if (!title) {
+      setError("Название задачи не может быть пустым");
+      return;
+    }
+
+    setEditPendingTaskId(taskId);
+    setError(null);
+    try {
+      const updatedTask = await updateTask(taskId, {
+        title,
+        deadline: editDeadline ? new Date(editDeadline).toISOString() : null,
+        reminder_at: editReminder ? new Date(editReminder).toISOString() : null,
+      });
+      setTasks((prev) =>
+        prev.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+      );
+      const todayData = await getToday();
+      setToday(todayData);
+      closeEdit();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось обновить задачу");
+    } finally {
+      setEditPendingTaskId(null);
+    }
+  }
+
   function onLogout() {
     clearToken();
     setAuthUser(null);
@@ -427,7 +512,102 @@ function App() {
                   <div className="item__main">
                     <span className={`badge badge--${task.status}`}>{task.status}</span>
                     <strong>[id:{task.id}] {task.title}</strong>
+                    <button
+                      className="ghost ghost--small"
+                      onClick={() => {
+                        if (editingTaskId === task.id) {
+                          closeEdit();
+                        } else {
+                          openEdit(task);
+                        }
+                      }}
+                      disabled={editPendingTaskId === task.id}
+                    >
+                      {editingTaskId === task.id ? "Close" : "Edit"}
+                    </button>
                   </div>
+                  <div className="status-actions">
+                    {(["inbox", "planned", "done", "snoozed"] as TaskStatus[]).map((status) => (
+                      <button
+                        key={status}
+                        className={
+                          task.status === status
+                            ? "ghost ghost--small status-btn status-btn--active"
+                            : "ghost ghost--small status-btn"
+                        }
+                        onClick={() => void onChangeTaskStatus(task.id, status)}
+                        disabled={statusPendingTaskId === task.id || task.status === status}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                  {editingTaskId === task.id ? (
+                    <div className="task-edit">
+                      <input
+                        className="quick-btn task-edit__input"
+                        type="text"
+                        value={editTitle}
+                        placeholder="Task title"
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        disabled={editPendingTaskId === task.id}
+                      />
+                      <label className="task-edit__field">
+                        <span>Deadline</span>
+                        <div className="task-edit__row">
+                          <input
+                            className="quick-btn task-edit__input"
+                            type="datetime-local"
+                            value={editDeadline}
+                            onChange={(e) => setEditDeadline(e.target.value)}
+                            disabled={editPendingTaskId === task.id}
+                          />
+                          <button
+                            className="ghost ghost--small"
+                            onClick={() => setEditDeadline("")}
+                            disabled={editPendingTaskId === task.id || !editDeadline}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </label>
+                      <label className="task-edit__field">
+                        <span>Reminder</span>
+                        <div className="task-edit__row">
+                          <input
+                            className="quick-btn task-edit__input"
+                            type="datetime-local"
+                            value={editReminder}
+                            onChange={(e) => setEditReminder(e.target.value)}
+                            disabled={editPendingTaskId === task.id}
+                          />
+                          <button
+                            className="ghost ghost--small"
+                            onClick={() => setEditReminder("")}
+                            disabled={editPendingTaskId === task.id || !editReminder}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </label>
+                      <div className="task-edit__actions">
+                        <button
+                          className="quick-btn"
+                          onClick={() => void onSaveTaskEdit(task.id)}
+                          disabled={editPendingTaskId === task.id}
+                        >
+                          {editPendingTaskId === task.id ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          className="ghost"
+                          onClick={closeEdit}
+                          disabled={editPendingTaskId === task.id}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="item__meta">
                     <span>deadline: {formatDate(task.deadline)}</span>
                     <span>reminder: {formatDate(task.reminder_at)}</span>

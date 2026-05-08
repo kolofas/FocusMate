@@ -149,6 +149,9 @@ C — Planner-центр
     [x] Пояснение в Today для inbox-only состояния (почему список может быть пуст)
     [ ] Быстрая смена статуса (deferred: after onboarding scope)
     [ ] Edit title + установка/сброс deadline/reminder
+    [ ] Post-MVP: frontend structure refactor (после закрытия основной frontend-части)
+    [ ] Рефактор делаем отдельным этапом: только структура/modularization, без изменения поведения
+    [ ] Цель рефактора: декомпозиция `App.tsx` на feature-блоки (`tasks/today/life/auth`) и вынос API/data orchestration
 3. Auth & personalization (web-first)
     [x] Web auth MVP (session/token) for personal workspace
     [x] Bind API requests to current user (remove shared/global web state)

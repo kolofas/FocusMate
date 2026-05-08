@@ -105,6 +105,10 @@ Main areas (v2 direction):
     - [x] Stage 1.5: web task creation flow (add task in UI)
     - [x] Stage 1.5: today screen clarity (explicit task visibility + empty-state guidance)
     - [ ] Stage 2: actions (status/edit/deadline/reminder)
+    - [ ] Stage 2.5: frontend structure refactor (post-feature)
+      - [ ] Start only after Stage 2 is fully smoke-checked
+      - [ ] Scope: split `App.tsx` into feature modules (`tasks/today/life/auth`) + isolate data hooks/API orchestration
+      - [ ] Rule: behavior-preserving refactor only (no UX/API contract changes)
   - [ ] Onboarding v1 (first-run clarity)
     - [ ] Guided prompt pattern (Codex-like): one compact top block, step-by-step hints, no heavy modal
     - [ ] Use only existing functionality (Life quick action -> Add task -> check Today)
