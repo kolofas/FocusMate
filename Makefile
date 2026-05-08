@@ -3,7 +3,7 @@ SHELL := /usr/bin/bash
 ENV ?= .env
 
 run:
-	uvicorn focus.backend.app:app --reload
+	set -a; source ./$(ENV); set +a; uvicorn focus.backend.app:app --reload
 
 test:
 	set -a; source ./$(ENV); set +a; pytest -q
@@ -16,7 +16,7 @@ fmt:
 	ruff format .
 
 migrate:
-	PYTHONPATH=$$PWD alembic upgrade head
+	set -a; source ./$(ENV); set +a; PYTHONPATH=$$PWD alembic upgrade head
 
 heads:
 	PYTHONPATH=$$PWD alembic heads

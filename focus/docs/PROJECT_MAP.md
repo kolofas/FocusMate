@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-04-23
+> Updated: 2026-05-08
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
