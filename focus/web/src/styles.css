@@ -66,6 +66,23 @@ h2 {
   font-size: 18px;
 }
 
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.panel-counter {
+  font-size: 12px;
+  color: var(--ink-muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--surface-2);
+}
+
 .ghost {
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -166,8 +183,14 @@ h2 {
 .item {
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px;
+  padding: 12px;
   background: var(--surface);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.item:hover {
+  border-color: #c2ccb8;
+  box-shadow: 0 4px 14px rgba(25, 40, 22, 0.06);
 }
 
 .item__main {
@@ -177,12 +200,21 @@ h2 {
   margin-bottom: 6px;
 }
 
+.item__main--task {
+  align-items: flex-start;
+}
+
+.task-title {
+  line-height: 1.25;
+}
+
 .item__meta {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   font-size: 13px;
   color: var(--ink-muted);
+  padding-top: 2px;
 }
 
 .status-actions {
@@ -194,6 +226,8 @@ h2 {
 
 .status-btn {
   text-transform: lowercase;
+  min-width: 64px;
+  text-align: center;
 }
 
 .status-btn--active {
@@ -354,7 +388,7 @@ h3 {
 }
 
 .create-task input.quick-btn {
-  min-width: 240px;
+  min-width: 280px;
   cursor: text;
 }
 
@@ -366,6 +400,14 @@ h3 {
 
   .topbar {
     flex-direction: column;
+  }
+
+  .create-task input.quick-btn {
+    min-width: 100%;
+  }
+
+  .item__main {
+    flex-wrap: wrap;
   }
 
   .ghost {

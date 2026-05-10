@@ -487,7 +487,10 @@ function App() {
 
         {!!authUser && !loading && tab === "all" && (
           <section className="panel">
-            <h2>All tasks</h2>
+            <div className="panel-head">
+              <h2>All tasks</h2>
+              <span className="panel-counter">{tasks.length}</span>
+            </div>
             <div className="quick-actions create-task">
               <input
                 className="quick-btn"
@@ -509,9 +512,9 @@ function App() {
             <ul className="list">
               {tasks.map((task) => (
                 <li key={task.id} className="item">
-                  <div className="item__main">
+                  <div className="item__main item__main--task">
                     <span className={`badge badge--${task.status}`}>{task.status}</span>
-                    <strong>[id:{task.id}] {task.title}</strong>
+                    <strong className="task-title">[id:{task.id}] {task.title}</strong>
                     <button
                       className="ghost ghost--small"
                       onClick={() => {
