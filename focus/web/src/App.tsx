@@ -37,6 +37,16 @@ type OnboardingStep = {
 function App() {
   const [tab, setTab] = useState<Tab>("all");
   const [todayVisited, setTodayVisited] = useState(false);
+  const [onboardingReplayMode, setOnboardingReplayMode] = useState(false);
+  const [onboardingReplayProgress, setOnboardingReplayProgress] = useState<{
+    life: boolean;
+    task: boolean;
+    today: boolean;
+  }>({
+    life: false,
+    task: false,
+    today: false,
+  });
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -118,30 +128,44 @@ function App() {
   );
   const lifeCategories = useMemo(() => lifeDashboard?.categories ?? [], [lifeDashboard]);
   const onboardingSteps = useMemo<OnboardingStep[]>(() => {
+    const lifeDone = onboardingReplayMode
+      ? onboardingReplayProgress.life
+      : recentActions.length > 0;
+    const taskDone = onboardingReplayMode ? onboardingReplayProgress.task : tasks.length > 0;
+    const todayDone = onboardingReplayMode ? onboardingReplayProgress.today : todayVisited;
+
     return [
       {
         id: "life",
         label: "Do one quick action in Life",
-        done: recentActions.length > 0,
+        done: lifeDone,
         ctaLabel: "Open Life",
         ctaTab: "life",
       },
       {
         id: "task",
         label: "Add one tiny task",
-        done: tasks.length > 0,
+        done: taskDone,
         ctaLabel: "Open Tasks",
         ctaTab: "all",
       },
       {
         id: "today",
         label: "Check your Today focus list",
-        done: todayVisited,
+        done: todayDone,
         ctaLabel: "Open Today",
         ctaTab: "today",
       },
     ];
-  }, [recentActions.length, tasks.length, todayVisited]);
+  }, [
+    onboardingReplayMode,
+    onboardingReplayProgress.life,
+    onboardingReplayProgress.task,
+    onboardingReplayProgress.today,
+    recentActions.length,
+    tasks.length,
+    todayVisited,
+  ]);
 
   const onboardingDoneCount = useMemo(
     () => onboardingSteps.filter((step) => step.done).length,
@@ -177,6 +201,9 @@ function App() {
     try {
       await logLifeAction(templateId);
       await refreshLifeData();
+      if (onboardingReplayMode) {
+        setOnboardingReplayProgress((prev) => ({ ...prev, life: true }));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось записать действие");
     } finally {
@@ -256,6 +283,9 @@ function App() {
     try {
       await createTask(title);
       setTaskTitle("");
+      if (onboardingReplayMode) {
+        setOnboardingReplayProgress((prev) => ({ ...prev, task: true }));
+      }
       const [tasksData, todayData] = await Promise.all([getTasks(), getToday()]);
       setTasks(tasksData);
       setToday(todayData);
@@ -354,6 +384,13 @@ function App() {
     setRecentActions([]);
   }
 
+  function onResetOnboarding() {
+    setOnboardingReplayMode(true);
+    setOnboardingReplayProgress({ life: false, task: false, today: false });
+    setOnboardingDismissed(false);
+    setTab("all");
+  }
+
   return (
     <main className="page">
       <section className="shell">
@@ -411,29 +448,44 @@ function App() {
         )}
 
         {authUser && (
-        <nav className="tabs" aria-label="View selector">
-          <button
-            className={tab === "all" ? "tab tab--active" : "tab"}
-            onClick={() => setTab("all")}
-          >
-            All tasks
-          </button>
-          <button
-            className={tab === "today" ? "tab tab--active" : "tab"}
-            onClick={() => {
-              setTab("today");
-              setTodayVisited(true);
-            }}
-          >
-            Today
-          </button>
-          <button
-            className={tab === "life" ? "tab tab--active" : "tab"}
-            onClick={() => setTab("life")}
-          >
-            Life
-          </button>
-        </nav>
+          <>
+            <nav className="tabs" aria-label="View selector">
+              <button
+                className={tab === "all" ? "tab tab--active" : "tab"}
+                onClick={() => setTab("all")}
+              >
+                All tasks
+              </button>
+              <button
+                className={tab === "today" ? "tab tab--active" : "tab"}
+                onClick={() => {
+                  setTab("today");
+                  setTodayVisited(true);
+                  if (onboardingReplayMode) {
+                    setOnboardingReplayProgress((prev) => ({ ...prev, today: true }));
+                  }
+                }}
+              >
+                Today
+              </button>
+              <button
+                className={tab === "life" ? "tab tab--active" : "tab"}
+                onClick={() => setTab("life")}
+              >
+                Life
+              </button>
+            </nav>
+            <div className="onboarding-controls">
+              {!showOnboarding ? (
+                <button className="ghost ghost--small" onClick={() => setOnboardingDismissed(false)}>
+                  Show onboarding
+                </button>
+              ) : null}
+              <button className="ghost ghost--small" onClick={onResetOnboarding}>
+                Reset onboarding
+              </button>
+            </div>
+          </>
         )}
 
         {loading && <p className="state">Загрузка...</p>}
@@ -460,6 +512,15 @@ function App() {
                     setTab(onboardingNextStep.ctaTab);
                     if (onboardingNextStep.ctaTab === "today") {
                       setTodayVisited(true);
+                      if (onboardingReplayMode) {
+                        setOnboardingReplayProgress((prev) => ({ ...prev, today: true }));
+                      }
+                    }
+                    if (onboardingReplayMode && onboardingNextStep.ctaTab === "all") {
+                      setOnboardingReplayProgress((prev) => ({ ...prev, task: true }));
+                    }
+                    if (onboardingReplayMode && onboardingNextStep.ctaTab === "life") {
+                      setOnboardingReplayProgress((prev) => ({ ...prev, life: true }));
                     }
                   }}
                 >
@@ -470,9 +531,14 @@ function App() {
             {onboardingIsComplete ? (
               <div className="onboarding__done">
                 <p>Nice start. Your first-run checklist is complete.</p>
-                <button className="ghost" onClick={() => setOnboardingDismissed(true)}>
-                  Hide onboarding
-                </button>
+                <div className="onboarding__actions">
+                  <button className="ghost" onClick={onResetOnboarding}>
+                    Start over
+                  </button>
+                  <button className="ghost" onClick={() => setOnboardingDismissed(true)}>
+                    Hide onboarding
+                  </button>
+                </div>
               </div>
             ) : null}
             <ul className="onboarding__checklist">
@@ -623,23 +689,26 @@ function App() {
 
         {!!authUser && !loading && tab === "today" && (
           <section className="panel">
-            <h2>Today {today ? `• ${today.date}` : ""}</h2>
+            <div className="panel-head">
+              <h2>Today {today ? `• ${today.date}` : ""}</h2>
+              <span className="panel-counter">{todayTasks.length}</span>
+            </div>
             <ul className="list">
               {todayTasks.map((entry) => (
-                <li key={entry.task.id} className="item">
-                  <div className="item__main">
+                <li key={entry.task.id} className="item today-item">
+                  <div className="item__main today-item__main">
                     <span className="rank">#{entry.rank}</span>
-                    <strong>[id:{entry.task.id}] {entry.task.title}</strong>
+                    <strong className="task-title">[id:{entry.task.id}] {entry.task.title}</strong>
                   </div>
-                  <div className="item__meta">
-                    <span>score: {entry.score}</span>
-                    <span>deadline: {formatDate(entry.task.deadline)}</span>
-                    <span>reminder: {formatDate(entry.task.reminder_at)}</span>
+                  <div className="item__meta today-meta">
+                    <span className="meta-chip meta-chip--score">score: {entry.score}</span>
+                    <span className="meta-chip">deadline: {formatDate(entry.task.deadline)}</span>
+                    <span className="meta-chip">reminder: {formatDate(entry.task.reminder_at)}</span>
                   </div>
                 </li>
               ))}
               {todayTasks.length === 0 && (
-                <li className="state today-empty">
+                <li className="state today-empty today-empty--card">
                   <p>
                     {inboxTasksCount > 0
                       ? `На сегодня задач пока нет. В inbox: ${inboxTasksCount}. Переведи задачу в planned, и она появится в Today.`

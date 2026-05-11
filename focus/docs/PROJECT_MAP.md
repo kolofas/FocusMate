@@ -124,6 +124,14 @@ Main areas (v2 direction):
       - [x] shortcut `repeat last/yesterday` (`POST /life/actions/repeat-shortcut`)
       - [x] web wiring + UX for fast repeat (`Life` tab + quick/repeat actions)
       - [ ] UI polish pass
+      - [ ] Chip design unification across Web UI (`status/score/deadline/reminder/category/points`)
+      - [ ] Delete single Life action (Today/Recent)
+        - [ ] Backend: user-scoped delete endpoint for `UserAction`
+        - [ ] Web: per-item delete action with confirmation + immediate recompute/refresh
+      - [ ] Life reset capability (safe clear for current user)
+        - [ ] Backend: add explicit reset endpoint for user life history/progress
+        - [ ] Web: add clear action with confirmation and immediate dashboard/recent refresh
+        - [ ] Rule: destructive action must be scoped to current user and require explicit confirmation
     - [ ] Sprint 3: onboarding + unlocks + polish (without heavy gamification/social)
       - [x] Web auth MVP (session/token) + personal workspace binding
       - [x] Targeted backend refactor (auth-critical overloaded functions only, bounded scope)
