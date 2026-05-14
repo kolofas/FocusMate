@@ -1,7 +1,7 @@
 # FocusMate - PROJECT_MAP (Single Source of Truth)
 
 > Status: Active
-> Updated: 2026-04-23
+> Updated: 2026-05-08
 > Rule: if something conflicts with this file - this file wins.
 
 ## 0) Current state(TL;DR)
@@ -102,8 +102,17 @@ Main areas (v2 direction):
   - [x] API/domain hardening: unified error-contract (`error.code/message/details`)
   - [ ] Web UI MVP (tasks/today/status/edit/deadline/reminder)
     - [x] Stage 1: frontend skeleton + read-only screens (All/Today)
+    - [x] Stage 1.5: web task creation flow (add task in UI)
+    - [x] Stage 1.5: today screen clarity (explicit task visibility + empty-state guidance)
     - [ ] Stage 2: actions (status/edit/deadline/reminder)
+    - [ ] Stage 2.5: frontend structure refactor (post-feature)
+      - [ ] Start only after Stage 2 is fully smoke-checked
+      - [ ] Scope: split `App.tsx` into feature modules (`tasks/today/life/auth`) + isolate data hooks/API orchestration
+      - [ ] Rule: behavior-preserving refactor only (no UX/API contract changes)
   - [ ] Onboarding v1 (first-run clarity)
+    - [ ] Guided prompt pattern (Codex-like): one compact top block, step-by-step hints, no heavy modal
+    - [ ] Use only existing functionality (Life quick action -> Add task -> check Today)
+    - [ ] Progressive checklist state (`0/3 -> 3/3`) with skip/dismiss
   - [ ] Test expansion for non-Telegram core paths
   - [ ] Product pivot v2 (life panel model):
     - [x] Sprint 1: backend foundation (`LifeCategory`, `ActionTemplate`, `UserAction`, `ProgressEntry`) + `/life/*` core API
@@ -115,6 +124,14 @@ Main areas (v2 direction):
       - [x] shortcut `repeat last/yesterday` (`POST /life/actions/repeat-shortcut`)
       - [x] web wiring + UX for fast repeat (`Life` tab + quick/repeat actions)
       - [ ] UI polish pass
+      - [ ] Chip design unification across Web UI (`status/score/deadline/reminder/category/points`)
+      - [ ] Delete single Life action (Today/Recent)
+        - [ ] Backend: user-scoped delete endpoint for `UserAction`
+        - [ ] Web: per-item delete action with confirmation + immediate recompute/refresh
+      - [ ] Life reset capability (safe clear for current user)
+        - [ ] Backend: add explicit reset endpoint for user life history/progress
+        - [ ] Web: add clear action with confirmation and immediate dashboard/recent refresh
+        - [ ] Rule: destructive action must be scoped to current user and require explicit confirmation
     - [ ] Sprint 3: onboarding + unlocks + polish (without heavy gamification/social)
       - [x] Web auth MVP (session/token) + personal workspace binding
       - [x] Targeted backend refactor (auth-critical overloaded functions only, bounded scope)

@@ -1,4 +1,9 @@
 export type TaskStatus = "inbox" | "planned" | "done" | "snoozed";
+export type TaskUpdate = {
+  title?: string;
+  deadline?: string | null;
+  reminder_at?: string | null;
+};
 
 export type Task = {
   id: number;
@@ -109,6 +114,30 @@ export function getTasks(): Promise<Task[]> {
   return request<Task[]>("/tasks/");
 }
 
+export function createTask(title: string): Promise<Task> {
+  return request<Task>("/tasks/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+}
+
+export function changeTaskStatus(taskId: number, status: TaskStatus): Promise<Task> {
+  return request<Task>(`/tasks/${taskId}/status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function updateTask(taskId: number, payload: TaskUpdate): Promise<Task> {
+  return request<Task>(`/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getToday(): Promise<FocusToday> {
   return request<FocusToday>("/focus/today");
 }
@@ -181,6 +210,12 @@ export function repeatLifeShortcut(mode: "last" | "yesterday"): Promise<{
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ mode }),
+  });
+}
+
+export function deleteLifeAction(userActionId: number): Promise<void> {
+  return request<void>(`/life/actions/${userActionId}`, {
+    method: "DELETE",
   });
 }
 

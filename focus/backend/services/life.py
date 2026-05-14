@@ -495,3 +495,21 @@ async def get_life_dashboard_week(
         total_points=sum(item.points for item in category_points),
         categories=category_points,
     )
+
+
+async def delete_user_action(
+    db: AsyncSession,
+    *,
+    user_id: int | None,
+    action_id: int,
+) -> None:
+    repo = LifeRepo(db)
+    action = await repo.get_user_action(action_id=action_id, user_id=user_id)
+    if action is None:
+        raise LifeNotFoundError(f"User action id={action_id} not found")
+
+    await repo.delete_progress_entries_by_action_id(action_id=action_id, user_id=user_id)
+    deleted_actions = await repo.delete_user_action(action_id=action_id, user_id=user_id)
+    if deleted_actions == 0:
+        raise LifeNotFoundError(f"User action id={action_id} not found")
+    await db.commit()

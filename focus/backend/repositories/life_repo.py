@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from focus.backend.database import models
@@ -181,6 +181,29 @@ class LifeRepo:
         )
         result = await self.db.execute(stmt)
         return result.scalars().first()
+
+    async def delete_progress_entries_by_action_id(
+        self, *, action_id: int, user_id: int | None
+    ) -> None:
+        stmt = delete(models.ProgressEntry).where(
+            models.ProgressEntry.user_action_id == action_id,
+            models.ProgressEntry.user_id.is_(None)
+            if user_id is None
+            else models.ProgressEntry.user_id == user_id,
+        )
+        await self.db.execute(stmt)
+
+    async def delete_user_action(
+        self, *, action_id: int, user_id: int | None
+    ) -> int:
+        stmt = delete(models.UserAction).where(
+            models.UserAction.id == action_id,
+            models.UserAction.user_id.is_(None)
+            if user_id is None
+            else models.UserAction.user_id == user_id,
+        )
+        result = await self.db.execute(stmt)
+        return int(result.rowcount or 0)
 
     async def sum_progress_points_by_category(
         self,

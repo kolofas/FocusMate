@@ -144,8 +144,17 @@ C — Planner-центр
     [x] Этап 1: каркас React+Vite+TS + минималистичный UI shell
     [x] Экран "All tasks" (read-only)
     [x] Экран "Today" (read-only)
-    [ ] Быстрая смена статуса
+    [x] Добавление задач в Web UI (create task flow)
+    [x] Улучшение Today-экрана: явное отображение задач/пустого состояния после onboarding
+    [x] Пояснение в Today для inbox-only состояния (почему список может быть пуст)
+    [ ] Быстрая смена статуса (deferred: after onboarding scope)
     [ ] Edit title + установка/сброс deadline/reminder
+    [ ] Post-MVP: frontend structure refactor (после закрытия основной frontend-части)
+    [ ] Рефактор делаем отдельным этапом: только структура/modularization, без изменения поведения
+    [ ] Цель рефактора: декомпозиция `App.tsx` на feature-блоки (`tasks/today/life/auth`) и вынос API/data orchestration
+    [ ] Life data reset (user-controlled)
+    [ ] Добавить backend endpoint для очистки пользовательской Life-истории (только данные текущего пользователя)
+    [ ] Добавить безопасный UX: confirm-step перед очисткой + явное post-action состояние (dashboard/recent = empty)
 3. Auth & personalization (web-first)
     [x] Web auth MVP (session/token) for personal workspace
     [x] Bind API requests to current user (remove shared/global web state)
@@ -155,21 +164,30 @@ C — Planner-центр
     [x] Split responsibilities (validation/repo/orchestration), keep behavior and API contracts unchanged
     [x] Add/adjust focused regression tests for touched flows
 5. Onboarding v1
-    [ ] [id:99] Пошаговый "первый запуск" (что делать в первые 2 минуты)
-    [ ] In-app onboarding hints for Life tab (first 3 actions)
+    [x] [id:99] Пошаговый "первый запуск" (что делать в первые 2 минуты)
+    [x] In-app onboarding hints for Life tab (first 3 actions: quick -> add task -> today)
+    [x] Guided prompt UX (Codex-like): compact block + one current step + clear CTA
+    [x] Progress checklist state (`0/3`, `1/3`, `2/3`, `3/3`) based on existing app data
+    [x] Use only existing flows (no new backend feature scope)
 6. UI/visual polish
     [ ] Improve visual hierarchy (primary CTA, spacing, contrast)
     [ ] Compact Recent list + progressive reveal ("Show more")
     [ ] Mobile readability pass
+    [ ] Unify chip styles across app (status/score/deadline/reminder/category/points)
+    [ ] Define one shared chip system (size, radius, border, semantic variants, hover/active)
 7. Quality
     [ ] [id:97] Расширить тесты на core API/use-cases
     [ ] Точечные контрактные тесты для будущего Web UI
 8. Reminders (infra-next)
     [ ] Вынести delivery в Redis worker после стабилизации базового MVP
-9. Telegram compatibility (без блокировки спринта)
+9. Life actions management
+    [ ] Add ability to delete a single action from Life Today/Recent
+    [ ] Backend: user-scoped delete endpoint for `UserAction`
+    [ ] Web: delete control near each Recent action + confirmation + immediate dashboard/recent refresh
+10. Telegram compatibility (без блокировки спринта)
     [ ] [id:98] Кнопки смены статуса в Telegram
     [ ] [id:24] Реализовать "Индекс элементов запроса +1"
-10. Ops/docs
+11. Ops/docs
     [ ] Короткий production runbook в docs (deploy/restart/logs/migrate/rollback)
     [ ] Зафиксировать сетевой риск текущего сервера (недоступность api.telegram.org:443)
     [ ] Настроить production-deploy Web UI на сервере (build `focus/web`, раздача `dist`, API proxy/CORS, smoke-check)

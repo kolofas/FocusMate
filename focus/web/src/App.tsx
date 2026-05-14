@@ -2,12 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AuthUser,
   clearToken,
+  changeTaskStatus,
   FocusToday,
   LifeActionTemplate,
   LifeDashboardToday,
   LifeRecentAction,
   Task,
+  TaskStatus,
   formatDate,
+  createTask,
+  deleteLifeAction,
   getMe,
   getLifeDashboardToday,
   getLifeQuickActions,
@@ -19,12 +23,32 @@ import {
   register,
   repeatLifeAction,
   repeatLifeShortcut,
+  updateTask,
 } from "./lib/api";
 
 type Tab = "all" | "today" | "life";
+type OnboardingStep = {
+  id: "life" | "task" | "today";
+  label: string;
+  done: boolean;
+  ctaLabel: string;
+  ctaTab: Tab;
+};
 
 function App() {
   const [tab, setTab] = useState<Tab>("all");
+  const [todayVisited, setTodayVisited] = useState(false);
+  const [onboardingReplayMode, setOnboardingReplayMode] = useState(false);
+  const [onboardingReplayProgress, setOnboardingReplayProgress] = useState<{
+    life: boolean;
+    task: boolean;
+    today: boolean;
+  }>({
+    life: false,
+    task: false,
+    today: false,
+  });
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -36,6 +60,15 @@ function App() {
   const [quickActions, setQuickActions] = useState<LifeActionTemplate[]>([]);
   const [recentActions, setRecentActions] = useState<LifeRecentAction[]>([]);
   const [lifePending, setLifePending] = useState(false);
+  const [deletingLifeActionId, setDeletingLifeActionId] = useState<number | null>(null);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskPending, setTaskPending] = useState(false);
+  const [statusPendingTaskId, setStatusPendingTaskId] = useState<number | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editReminder, setEditReminder] = useState("");
+  const [editPendingTaskId, setEditPendingTaskId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,7 +124,69 @@ function App() {
   }, []);
 
   const todayTasks = useMemo(() => today?.items ?? [], [today]);
+  const inboxTasksCount = useMemo(
+    () => tasks.filter((task) => task.status === "inbox").length,
+    [tasks]
+  );
   const lifeCategories = useMemo(() => lifeDashboard?.categories ?? [], [lifeDashboard]);
+  const onboardingSteps = useMemo<OnboardingStep[]>(() => {
+    const lifeDone = onboardingReplayMode
+      ? onboardingReplayProgress.life
+      : recentActions.length > 0;
+    const taskDone = onboardingReplayMode ? onboardingReplayProgress.task : tasks.length > 0;
+    const todayDone = onboardingReplayMode ? onboardingReplayProgress.today : todayVisited;
+
+    return [
+      {
+        id: "life",
+        label: "Do one quick action in Life",
+        done: lifeDone,
+        ctaLabel: "Open Life",
+        ctaTab: "life",
+      },
+      {
+        id: "task",
+        label: "Add one tiny task",
+        done: taskDone,
+        ctaLabel: "Open Tasks",
+        ctaTab: "all",
+      },
+      {
+        id: "today",
+        label: "Check your Today focus list",
+        done: todayDone,
+        ctaLabel: "Open Today",
+        ctaTab: "today",
+      },
+    ];
+  }, [
+    onboardingReplayMode,
+    onboardingReplayProgress.life,
+    onboardingReplayProgress.task,
+    onboardingReplayProgress.today,
+    recentActions.length,
+    tasks.length,
+    todayVisited,
+  ]);
+
+  const onboardingDoneCount = useMemo(
+    () => onboardingSteps.filter((step) => step.done).length,
+    [onboardingSteps]
+  );
+  const onboardingNextStep = useMemo(
+    () => onboardingSteps.find((step) => !step.done) ?? null,
+    [onboardingSteps]
+  );
+  const onboardingIsComplete = useMemo(
+    () => onboardingDoneCount === onboardingSteps.length,
+    [onboardingDoneCount, onboardingSteps.length]
+  );
+  const showOnboarding = useMemo(() => {
+    if (!authUser || loading || onboardingDismissed) {
+      return false;
+    }
+    return true;
+  }, [authUser, loading, onboardingDismissed]);
 
   async function refreshLifeData() {
     const [dashboardData, recentData] = await Promise.all([
@@ -108,6 +203,9 @@ function App() {
     try {
       await logLifeAction(templateId);
       await refreshLifeData();
+      if (onboardingReplayMode) {
+        setOnboardingReplayProgress((prev) => ({ ...prev, life: true }));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось записать действие");
     } finally {
@@ -138,6 +236,24 @@ function App() {
       setError(err instanceof Error ? err.message : "Не удалось выполнить shortcut");
     } finally {
       setLifePending(false);
+    }
+  }
+
+  async function onDeleteLifeAction(userActionId: number) {
+    const confirmed = window.confirm("Delete this life action?");
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingLifeActionId(userActionId);
+    setError(null);
+    try {
+      await deleteLifeAction(userActionId);
+      await refreshLifeData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить действие");
+    } finally {
+      setDeletingLifeActionId(null);
     }
   }
 
@@ -175,14 +291,124 @@ function App() {
     }
   }
 
+  async function onCreateTask() {
+    const title = taskTitle.trim();
+    if (!title) {
+      setError("Введите название задачи");
+      return;
+    }
+
+    setTaskPending(true);
+    setError(null);
+    try {
+      await createTask(title);
+      setTaskTitle("");
+      if (onboardingReplayMode) {
+        setOnboardingReplayProgress((prev) => ({ ...prev, task: true }));
+      }
+      const [tasksData, todayData] = await Promise.all([getTasks(), getToday()]);
+      setTasks(tasksData);
+      setToday(todayData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось создать задачу");
+    } finally {
+      setTaskPending(false);
+    }
+  }
+
+  async function onChangeTaskStatus(taskId: number, status: TaskStatus) {
+    setStatusPendingTaskId(taskId);
+    setError(null);
+    try {
+      const updatedTask = await changeTaskStatus(taskId, status);
+      setTasks((prev) =>
+        prev.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+      );
+      const todayData = await getToday();
+      setToday(todayData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось изменить статус");
+    } finally {
+      setStatusPendingTaskId(null);
+    }
+  }
+
+  function toDatetimeLocal(value: string | null): string {
+    if (!value) {
+      return "";
+    }
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) {
+      return "";
+    }
+
+    const year = dt.getFullYear();
+    const month = String(dt.getMonth() + 1).padStart(2, "0");
+    const day = String(dt.getDate()).padStart(2, "0");
+    const hours = String(dt.getHours()).padStart(2, "0");
+    const minutes = String(dt.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  function openEdit(task: Task) {
+    setEditingTaskId(task.id);
+    setEditTitle(task.title);
+    setEditDeadline(toDatetimeLocal(task.deadline));
+    setEditReminder(toDatetimeLocal(task.reminder_at));
+  }
+
+  function closeEdit() {
+    setEditingTaskId(null);
+    setEditTitle("");
+    setEditDeadline("");
+    setEditReminder("");
+  }
+
+  async function onSaveTaskEdit(taskId: number) {
+    const title = editTitle.trim();
+    if (!title) {
+      setError("Название задачи не может быть пустым");
+      return;
+    }
+
+    setEditPendingTaskId(taskId);
+    setError(null);
+    try {
+      const updatedTask = await updateTask(taskId, {
+        title,
+        deadline: editDeadline ? new Date(editDeadline).toISOString() : null,
+        reminder_at: editReminder ? new Date(editReminder).toISOString() : null,
+      });
+      setTasks((prev) =>
+        prev.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+      );
+      const todayData = await getToday();
+      setToday(todayData);
+      closeEdit();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось обновить задачу");
+    } finally {
+      setEditPendingTaskId(null);
+    }
+  }
+
   function onLogout() {
     clearToken();
     setAuthUser(null);
+    setTodayVisited(false);
+    setOnboardingDismissed(false);
     setTasks([]);
     setToday(null);
     setLifeDashboard(null);
     setQuickActions([]);
     setRecentActions([]);
+  }
+
+  function onResetOnboarding() {
+    setOnboardingReplayMode(true);
+    setOnboardingReplayProgress({ life: false, task: false, today: false });
+    setOnboardingDismissed(false);
+    setTab("all");
   }
 
   return (
@@ -242,44 +468,238 @@ function App() {
         )}
 
         {authUser && (
-        <nav className="tabs" aria-label="View selector">
-          <button
-            className={tab === "all" ? "tab tab--active" : "tab"}
-            onClick={() => setTab("all")}
-          >
-            All tasks
-          </button>
-          <button
-            className={tab === "today" ? "tab tab--active" : "tab"}
-            onClick={() => setTab("today")}
-          >
-            Today
-          </button>
-          <button
-            className={tab === "life" ? "tab tab--active" : "tab"}
-            onClick={() => setTab("life")}
-          >
-            Life
-          </button>
-        </nav>
+          <>
+            <nav className="tabs" aria-label="View selector">
+              <button
+                className={tab === "all" ? "tab tab--active" : "tab"}
+                onClick={() => setTab("all")}
+              >
+                All tasks
+              </button>
+              <button
+                className={tab === "today" ? "tab tab--active" : "tab"}
+                onClick={() => {
+                  setTab("today");
+                  setTodayVisited(true);
+                  if (onboardingReplayMode) {
+                    setOnboardingReplayProgress((prev) => ({ ...prev, today: true }));
+                  }
+                }}
+              >
+                Today
+              </button>
+              <button
+                className={tab === "life" ? "tab tab--active" : "tab"}
+                onClick={() => setTab("life")}
+              >
+                Life
+              </button>
+            </nav>
+            <div className="onboarding-controls">
+              {!showOnboarding ? (
+                <button className="ghost ghost--small" onClick={() => setOnboardingDismissed(false)}>
+                  Show onboarding
+                </button>
+              ) : null}
+              <button className="ghost ghost--small" onClick={onResetOnboarding}>
+                Reset onboarding
+              </button>
+            </div>
+          </>
         )}
 
         {loading && <p className="state">Загрузка...</p>}
         {error && <p className="state state--error">{error}</p>}
 
-        {!!authUser && !loading && !error && tab === "all" && (
+        {showOnboarding && (
+          <section className="panel onboarding">
+            <div className="onboarding__top">
+              <h2>First 2 minutes</h2>
+              <span className="onboarding__progress">
+                {onboardingDoneCount}/{onboardingSteps.length}
+              </span>
+            </div>
+            {!onboardingIsComplete && onboardingNextStep ? (
+              <p className="onboarding__next">
+                Current step: <strong>{onboardingNextStep.label}</strong>
+              </p>
+            ) : null}
+            {!onboardingIsComplete && onboardingNextStep ? (
+              <div className="quick-actions">
+                <button
+                  className="quick-btn"
+                  onClick={() => {
+                    setTab(onboardingNextStep.ctaTab);
+                    if (onboardingNextStep.ctaTab === "today") {
+                      setTodayVisited(true);
+                      if (onboardingReplayMode) {
+                        setOnboardingReplayProgress((prev) => ({ ...prev, today: true }));
+                      }
+                    }
+                    if (onboardingReplayMode && onboardingNextStep.ctaTab === "all") {
+                      setOnboardingReplayProgress((prev) => ({ ...prev, task: true }));
+                    }
+                    if (onboardingReplayMode && onboardingNextStep.ctaTab === "life") {
+                      setOnboardingReplayProgress((prev) => ({ ...prev, life: true }));
+                    }
+                  }}
+                >
+                  {onboardingNextStep.ctaLabel}
+                </button>
+              </div>
+            ) : null}
+            {onboardingIsComplete ? (
+              <div className="onboarding__done">
+                <p>Nice start. Your first-run checklist is complete.</p>
+                <div className="onboarding__actions">
+                  <button className="ghost" onClick={onResetOnboarding}>
+                    Start over
+                  </button>
+                  <button className="ghost" onClick={() => setOnboardingDismissed(true)}>
+                    Hide onboarding
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <ul className="onboarding__checklist">
+              {onboardingSteps.map((step) => (
+                <li key={step.id} className={step.done ? "done" : ""}>
+                  {step.done ? "✓" : "○"} {step.label}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {!!authUser && !loading && tab === "all" && (
           <section className="panel">
-            <h2>All tasks</h2>
+            <div className="panel-head">
+              <h2>All tasks</h2>
+              <span className="panel-counter">{tasks.length}</span>
+            </div>
+            <div className="quick-actions create-task">
+              <input
+                className="quick-btn"
+                type="text"
+                value={taskTitle}
+                placeholder="New task title"
+                onChange={(e) => setTaskTitle(e.target.value)}
+                disabled={taskPending}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void onCreateTask();
+                  }
+                }}
+              />
+              <button className="quick-btn" onClick={() => void onCreateTask()} disabled={taskPending}>
+                {taskPending ? "Adding..." : "Add task"}
+              </button>
+            </div>
             <ul className="list">
               {tasks.map((task) => (
                 <li key={task.id} className="item">
-                  <div className="item__main">
-                    <span className={`badge badge--${task.status}`}>{task.status}</span>
-                    <strong>[id:{task.id}] {task.title}</strong>
+                  <div className="item__main item__main--task">
+                    <span className={`chip chip--status badge badge--${task.status}`}>{task.status}</span>
+                    <strong className="task-title">[id:{task.id}] {task.title}</strong>
+                    <button
+                      className="ghost ghost--small"
+                      onClick={() => {
+                        if (editingTaskId === task.id) {
+                          closeEdit();
+                        } else {
+                          openEdit(task);
+                        }
+                      }}
+                      disabled={editPendingTaskId === task.id}
+                    >
+                      {editingTaskId === task.id ? "Close" : "Edit"}
+                    </button>
                   </div>
+                  <div className="status-actions">
+                    {(["inbox", "planned", "done", "snoozed"] as TaskStatus[]).map((status) => (
+                      <button
+                        key={status}
+                        className={
+                          task.status === status
+                            ? "ghost ghost--small status-btn status-btn--active"
+                            : "ghost ghost--small status-btn"
+                        }
+                        onClick={() => void onChangeTaskStatus(task.id, status)}
+                        disabled={statusPendingTaskId === task.id || task.status === status}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                  {editingTaskId === task.id ? (
+                    <div className="task-edit">
+                      <input
+                        className="quick-btn task-edit__input"
+                        type="text"
+                        value={editTitle}
+                        placeholder="Task title"
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        disabled={editPendingTaskId === task.id}
+                      />
+                      <label className="task-edit__field">
+                        <span>Deadline</span>
+                        <div className="task-edit__row">
+                          <input
+                            className="quick-btn task-edit__input"
+                            type="datetime-local"
+                            value={editDeadline}
+                            onChange={(e) => setEditDeadline(e.target.value)}
+                            disabled={editPendingTaskId === task.id}
+                          />
+                          <button
+                            className="ghost ghost--small"
+                            onClick={() => setEditDeadline("")}
+                            disabled={editPendingTaskId === task.id || !editDeadline}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </label>
+                      <label className="task-edit__field">
+                        <span>Reminder</span>
+                        <div className="task-edit__row">
+                          <input
+                            className="quick-btn task-edit__input"
+                            type="datetime-local"
+                            value={editReminder}
+                            onChange={(e) => setEditReminder(e.target.value)}
+                            disabled={editPendingTaskId === task.id}
+                          />
+                          <button
+                            className="ghost ghost--small"
+                            onClick={() => setEditReminder("")}
+                            disabled={editPendingTaskId === task.id || !editReminder}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </label>
+                      <div className="task-edit__actions">
+                        <button
+                          className="quick-btn"
+                          onClick={() => void onSaveTaskEdit(task.id)}
+                          disabled={editPendingTaskId === task.id}
+                        >
+                          {editPendingTaskId === task.id ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          className="ghost"
+                          onClick={closeEdit}
+                          disabled={editPendingTaskId === task.id}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="item__meta">
-                    <span>deadline: {formatDate(task.deadline)}</span>
-                    <span>reminder: {formatDate(task.reminder_at)}</span>
+                    <span className="chip chip--meta">deadline: {formatDate(task.deadline)}</span>
+                    <span className="chip chip--meta">reminder: {formatDate(task.reminder_at)}</span>
                   </div>
                 </li>
               ))}
@@ -287,29 +707,43 @@ function App() {
           </section>
         )}
 
-        {!!authUser && !loading && !error && tab === "today" && (
+        {!!authUser && !loading && tab === "today" && (
           <section className="panel">
-            <h2>Today {today ? `• ${today.date}` : ""}</h2>
+            <div className="panel-head">
+              <h2>Today {today ? `• ${today.date}` : ""}</h2>
+              <span className="panel-counter">{todayTasks.length}</span>
+            </div>
             <ul className="list">
               {todayTasks.map((entry) => (
-                <li key={entry.task.id} className="item">
-                  <div className="item__main">
+                <li key={entry.task.id} className="item today-item">
+                  <div className="item__main today-item__main">
                     <span className="rank">#{entry.rank}</span>
-                    <strong>[id:{entry.task.id}] {entry.task.title}</strong>
+                    <strong className="task-title">[id:{entry.task.id}] {entry.task.title}</strong>
                   </div>
-                  <div className="item__meta">
-                    <span>score: {entry.score}</span>
-                    <span>deadline: {formatDate(entry.task.deadline)}</span>
-                    <span>reminder: {formatDate(entry.task.reminder_at)}</span>
+                  <div className="item__meta today-meta">
+                    <span className="chip chip--score">score: {entry.score}</span>
+                    <span className="chip chip--meta">deadline: {formatDate(entry.task.deadline)}</span>
+                    <span className="chip chip--meta">reminder: {formatDate(entry.task.reminder_at)}</span>
                   </div>
                 </li>
               ))}
-              {todayTasks.length === 0 && <li className="state">На сегодня задач нет</li>}
+              {todayTasks.length === 0 && (
+                <li className="state today-empty today-empty--card">
+                  <p>
+                    {inboxTasksCount > 0
+                      ? `На сегодня задач пока нет. В inbox: ${inboxTasksCount}. Переведи задачу в planned, и она появится в Today.`
+                      : "На сегодня задач нет. Добавь одну задачу, чтобы построить список фокуса."}
+                  </p>
+                  <button className="ghost ghost--small" onClick={() => setTab("all")}>
+                    Go to All tasks
+                  </button>
+                </li>
+              )}
             </ul>
           </section>
         )}
 
-        {!!authUser && !loading && !error && tab === "life" && (
+        {!!authUser && !loading && tab === "life" && (
           <section className="panel">
             <h2>Life today {lifeDashboard ? `• ${lifeDashboard.date}` : ""}</h2>
 
@@ -359,18 +793,27 @@ function App() {
                 <li key={action.id} className="item">
                   <div className="item__main">
                     <strong>{action.title}</strong>
-                    <button
-                      className="ghost ghost--small"
-                      onClick={() => onRepeatAction(action.id)}
-                      disabled={lifePending}
-                    >
-                      Repeat
-                    </button>
+                    <div className="row-actions">
+                      <button
+                        className="ghost ghost--small"
+                        onClick={() => onRepeatAction(action.id)}
+                        disabled={lifePending || deletingLifeActionId === action.id}
+                      >
+                        Repeat
+                      </button>
+                      <button
+                        className="ghost ghost--small"
+                        onClick={() => void onDeleteLifeAction(action.id)}
+                        disabled={lifePending || deletingLifeActionId === action.id}
+                      >
+                        {deletingLifeActionId === action.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </div>
                   <div className="item__meta">
-                    <span>category: {action.category_title ?? "-"}</span>
-                    <span>points: {action.points}</span>
-                    <span>{formatDate(action.happened_at)}</span>
+                    <span className="chip chip--meta">category: {action.category_title ?? "-"}</span>
+                    <span className="chip chip--meta">points: {action.points}</span>
+                    <span className="chip chip--meta">{formatDate(action.happened_at)}</span>
                   </div>
                 </li>
               ))}
