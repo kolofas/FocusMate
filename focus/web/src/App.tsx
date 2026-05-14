@@ -599,7 +599,7 @@ function App() {
               {tasks.map((task) => (
                 <li key={task.id} className="item">
                   <div className="item__main item__main--task">
-                    <span className={`badge badge--${task.status}`}>{task.status}</span>
+                    <span className={`chip chip--status badge badge--${task.status}`}>{task.status}</span>
                     <strong className="task-title">[id:{task.id}] {task.title}</strong>
                     <button
                       className="ghost ghost--small"
@@ -698,8 +698,8 @@ function App() {
                     </div>
                   ) : null}
                   <div className="item__meta">
-                    <span>deadline: {formatDate(task.deadline)}</span>
-                    <span>reminder: {formatDate(task.reminder_at)}</span>
+                    <span className="chip chip--meta">deadline: {formatDate(task.deadline)}</span>
+                    <span className="chip chip--meta">reminder: {formatDate(task.reminder_at)}</span>
                   </div>
                 </li>
               ))}
@@ -721,9 +721,9 @@ function App() {
                     <strong className="task-title">[id:{entry.task.id}] {entry.task.title}</strong>
                   </div>
                   <div className="item__meta today-meta">
-                    <span className="meta-chip meta-chip--score">score: {entry.score}</span>
-                    <span className="meta-chip">deadline: {formatDate(entry.task.deadline)}</span>
-                    <span className="meta-chip">reminder: {formatDate(entry.task.reminder_at)}</span>
+                    <span className="chip chip--score">score: {entry.score}</span>
+                    <span className="chip chip--meta">deadline: {formatDate(entry.task.deadline)}</span>
+                    <span className="chip chip--meta">reminder: {formatDate(entry.task.reminder_at)}</span>
                   </div>
                 </li>
               ))}
@@ -811,9 +811,9 @@ function App() {
                     </div>
                   </div>
                   <div className="item__meta">
-                    <span>category: {action.category_title ?? "-"}</span>
-                    <span>points: {action.points}</span>
-                    <span>{formatDate(action.happened_at)}</span>
+                    <span className="chip chip--meta">category: {action.category_title ?? "-"}</span>
+                    <span className="chip chip--meta">points: {action.points}</span>
+                    <span className="chip chip--meta">{formatDate(action.happened_at)}</span>
                   </div>
                 </li>
               ))}

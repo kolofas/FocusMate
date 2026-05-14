@@ -289,13 +289,33 @@ h2 {
   flex-wrap: wrap;
 }
 
-.badge {
+.chip {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  border: 1px solid var(--line);
   border-radius: 999px;
   padding: 2px 8px;
-  border: 1px solid var(--line);
+  background: #f7f9f3;
+}
+
+.chip--status {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.chip--meta {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.chip--score {
+  border-color: #b8ccb4;
+  background: #ebf5ea;
+  color: #24563f;
+}
+
+.badge {
+  color: var(--ink);
 }
 
 .badge--inbox {
@@ -362,19 +382,6 @@ h2 {
 
 .today-meta {
   gap: 8px;
-}
-
-.meta-chip {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 2px 8px;
-  background: #f7f9f3;
-}
-
-.meta-chip--score {
-  border-color: #b8ccb4;
-  background: #ebf5ea;
-  color: #24563f;
 }
 
 h3 {
