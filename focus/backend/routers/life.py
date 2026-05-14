@@ -19,6 +19,7 @@ from focus.backend.schemas import (
     LifeDashboardWeekResponse,
 )
 from focus.backend.services.life import (
+    delete_user_action,
     get_life_categories,
     get_quick_action_templates,
     log_user_action,
@@ -118,6 +119,24 @@ async def read_recent_user_actions(
 ):
     resolved_user_id = resolve_scope_user_id(current_user, user_id)
     return await get_recent_user_actions(db, user_id=resolved_user_id, limit=limit)
+
+
+@router.delete("/actions/{action_id}", status_code=204)
+async def remove_user_action(
+    action_id: int,
+    db: AsyncSession = Depends(get_db),
+    user_id: int | None = Query(None, description="optional user id"),
+    current_user: models.WebUser | None = Depends(current_active_user_optional),
+):
+    resolved_user_id = resolve_scope_user_id(current_user, user_id)
+    try:
+        await delete_user_action(
+            db,
+            user_id=resolved_user_id,
+            action_id=action_id,
+        )
+    except LifeNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 @router.get("/dashboard/today", response_model=LifeDashboardTodayResponse)

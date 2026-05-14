@@ -213,6 +213,12 @@ export function repeatLifeShortcut(mode: "last" | "yesterday"): Promise<{
   });
 }
 
+export function deleteLifeAction(userActionId: number): Promise<void> {
+  return request<void>(`/life/actions/${userActionId}`, {
+    method: "DELETE",
+  });
+}
+
 export function formatDate(value: string | null): string {
   if (!value) {
     return "-";

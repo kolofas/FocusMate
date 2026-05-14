@@ -214,6 +214,12 @@ h2 {
   margin-bottom: 6px;
 }
 
+.row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .item__main--task {
   align-items: flex-start;
 }

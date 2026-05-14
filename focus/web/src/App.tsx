@@ -11,6 +11,7 @@ import {
   TaskStatus,
   formatDate,
   createTask,
+  deleteLifeAction,
   getMe,
   getLifeDashboardToday,
   getLifeQuickActions,
@@ -59,6 +60,7 @@ function App() {
   const [quickActions, setQuickActions] = useState<LifeActionTemplate[]>([]);
   const [recentActions, setRecentActions] = useState<LifeRecentAction[]>([]);
   const [lifePending, setLifePending] = useState(false);
+  const [deletingLifeActionId, setDeletingLifeActionId] = useState<number | null>(null);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPending, setTaskPending] = useState(false);
   const [statusPendingTaskId, setStatusPendingTaskId] = useState<number | null>(null);
@@ -234,6 +236,24 @@ function App() {
       setError(err instanceof Error ? err.message : "Не удалось выполнить shortcut");
     } finally {
       setLifePending(false);
+    }
+  }
+
+  async function onDeleteLifeAction(userActionId: number) {
+    const confirmed = window.confirm("Delete this life action?");
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingLifeActionId(userActionId);
+    setError(null);
+    try {
+      await deleteLifeAction(userActionId);
+      await refreshLifeData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить действие");
+    } finally {
+      setDeletingLifeActionId(null);
     }
   }
 
@@ -773,13 +793,22 @@ function App() {
                 <li key={action.id} className="item">
                   <div className="item__main">
                     <strong>{action.title}</strong>
-                    <button
-                      className="ghost ghost--small"
-                      onClick={() => onRepeatAction(action.id)}
-                      disabled={lifePending}
-                    >
-                      Repeat
-                    </button>
+                    <div className="row-actions">
+                      <button
+                        className="ghost ghost--small"
+                        onClick={() => onRepeatAction(action.id)}
+                        disabled={lifePending || deletingLifeActionId === action.id}
+                      >
+                        Repeat
+                      </button>
+                      <button
+                        className="ghost ghost--small"
+                        onClick={() => void onDeleteLifeAction(action.id)}
+                        disabled={lifePending || deletingLifeActionId === action.id}
+                      >
+                        {deletingLifeActionId === action.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </div>
                   <div className="item__meta">
                     <span>category: {action.category_title ?? "-"}</span>
