@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from .settings import settings
+from .settings import settings, enforce_security_config
 from .routers.health import router as health_router
 from .routers.tasks import router as tasks_router
 from .routers.inbox import router as inbox_router
@@ -31,6 +31,8 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
+# apscheduler на INFO пишет две строки на каждый tick (каждые 30с) — это заваливает логи
+logging.getLogger("apscheduler").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
@@ -47,6 +49,10 @@ async def _run_reminder_tick() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # В prod небезопасный конфиг (дефолтный JWT-секрет / пустой CORS) валит старт;
+    # в dev — только warning. См. settings.enforce_security_config.
+    enforce_security_config(settings)
+
     scheduler: AsyncIOScheduler | None = None
 
     if settings.reminders_worker_enabled and not _is_pytest():
@@ -79,9 +85,15 @@ app = FastAPI(title="FocusMate (MVP)", lifespan=lifespan)
 allowed_origins = [
     origin.strip() for origin in settings.web_cors_origins.split(",") if origin.strip()
 ]
+if not allowed_origins:
+    log.warning(
+        "WEB_CORS_ORIGINS пуст — CORS открыт для всех источников (allow_origins=*); "
+        "допустимо только в dev"
+    )
+    allowed_origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins or ["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
