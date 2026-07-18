@@ -54,6 +54,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authPending, setAuthPending] = useState(false);
+  const [authShake, setAuthShake] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [today, setToday] = useState<FocusToday | null>(null);
   const [lifeDashboard, setLifeDashboard] = useState<LifeDashboardToday | null>(null);
@@ -286,6 +287,7 @@ function App() {
       await reloadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Auth failed");
+      setAuthShake(true);
     } finally {
       setAuthPending(false);
     }
@@ -411,6 +413,105 @@ function App() {
     setTab("all");
   }
 
+  function toggleAuthMode() {
+    setAuthMode((prev) => (prev === "login" ? "register" : "login"));
+  }
+
+  if (loading) {
+    return (
+      <main className="auth-page">
+        <p className="auth-loading">Загрузка…</p>
+      </main>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <main className="auth-page">
+        <div
+          className={authShake ? "auth-card-wrap auth-shake" : "auth-card-wrap"}
+          onAnimationEnd={() => {
+            if (authShake) {
+              setAuthShake(false);
+            }
+          }}
+        >
+          <section className="auth-card">
+            <div className="auth-brand">
+              <p className="eyebrow">FocusMate</p>
+              <h1 className="auth-title">
+                {authMode === "login" ? "Welcome back" : "Create account"}
+              </h1>
+              <p className="auth-subtitle">
+                {authMode === "login"
+                  ? "Sign in to your focus board"
+                  : "It takes less than a minute"}
+              </p>
+            </div>
+            <form
+              className="auth-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void onSubmitAuth();
+              }}
+            >
+              <div className="auth-field">
+                <input
+                  id="auth-email"
+                  className="auth-input"
+                  type="email"
+                  value={email}
+                  placeholder=" "
+                  autoComplete="email"
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={authPending}
+                />
+                <label htmlFor="auth-email" className="auth-label">
+                  Email
+                </label>
+              </div>
+              <div className="auth-field">
+                <input
+                  id="auth-password"
+                  className="auth-input"
+                  type="password"
+                  value={password}
+                  placeholder=" "
+                  autoComplete={
+                    authMode === "login" ? "current-password" : "new-password"
+                  }
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={authPending}
+                />
+                <label htmlFor="auth-password" className="auth-label">
+                  Password
+                </label>
+              </div>
+              {error ? <p className="auth-error">{error}</p> : null}
+              <button className="auth-submit" type="submit" disabled={authPending}>
+                {authPending
+                  ? "Please wait…"
+                  : authMode === "login"
+                    ? "Sign in"
+                    : "Create account"}
+              </button>
+            </form>
+            <button
+              className="auth-switch"
+              type="button"
+              onClick={toggleAuthMode}
+              disabled={authPending}
+            >
+              {authMode === "login"
+                ? "Need an account? Register"
+                : "Already have an account? Sign in"}
+            </button>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="page">
       <section className="shell">
@@ -430,42 +531,6 @@ function App() {
             </div>
           ) : null}
         </header>
-
-        {!authUser && (
-          <section className="panel">
-            <h2>{authMode === "login" ? "Login" : "Register"}</h2>
-            <div className="quick-actions">
-              <input
-                className="quick-btn"
-                type="email"
-                value={email}
-                placeholder="email"
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={authPending}
-              />
-              <input
-                className="quick-btn"
-                type="password"
-                value={password}
-                placeholder="password"
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={authPending}
-              />
-              <button className="quick-btn" onClick={onSubmitAuth} disabled={authPending}>
-                {authMode === "login" ? "Sign in" : "Create account"}
-              </button>
-              <button
-                className="ghost"
-                onClick={() =>
-                  setAuthMode((prev) => (prev === "login" ? "register" : "login"))
-                }
-                disabled={authPending}
-              >
-                {authMode === "login" ? "Switch to register" : "Switch to login"}
-              </button>
-            </div>
-          </section>
-        )}
 
         {authUser && (
           <>
