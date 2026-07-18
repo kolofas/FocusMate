@@ -629,7 +629,7 @@ function App() {
             <ul className="onboarding__checklist">
               {onboardingSteps.map((step) => (
                 <li key={step.id} className={step.done ? "done" : ""}>
-                  {step.done ? "✓" : "○"} {step.label}
+                  <span className="check">{step.done ? "✓" : "○"}</span> {step.label}
                 </li>
               ))}
             </ul>
@@ -665,7 +665,7 @@ function App() {
                 <li key={task.id} className="item">
                   <div className="item__main item__main--task">
                     <span className={`chip chip--status badge badge--${task.status}`}>{task.status}</span>
-                    <strong className="task-title">[id:{task.id}] {task.title}</strong>
+                    <strong className="task-title">{task.title}</strong>
                     <button
                       className="ghost ghost--small"
                       onClick={() => {
@@ -762,10 +762,16 @@ function App() {
                       </div>
                     </div>
                   ) : null}
-                  <div className="item__meta">
-                    <span className="chip chip--meta">deadline: {formatDate(task.deadline)}</span>
-                    <span className="chip chip--meta">reminder: {formatDate(task.reminder_at)}</span>
-                  </div>
+                  {task.deadline || task.reminder_at ? (
+                    <div className="item__meta">
+                      {task.deadline ? (
+                        <span className="chip chip--meta">deadline: {formatDate(task.deadline)}</span>
+                      ) : null}
+                      {task.reminder_at ? (
+                        <span className="chip chip--meta">reminder: {formatDate(task.reminder_at)}</span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -783,12 +789,16 @@ function App() {
                 <li key={entry.task.id} className="item today-item">
                   <div className="item__main today-item__main">
                     <span className="rank">#{entry.rank}</span>
-                    <strong className="task-title">[id:{entry.task.id}] {entry.task.title}</strong>
+                    <strong className="task-title">{entry.task.title}</strong>
                   </div>
                   <div className="item__meta today-meta">
                     <span className="chip chip--score">score: {entry.score}</span>
-                    <span className="chip chip--meta">deadline: {formatDate(entry.task.deadline)}</span>
-                    <span className="chip chip--meta">reminder: {formatDate(entry.task.reminder_at)}</span>
+                    {entry.task.deadline ? (
+                      <span className="chip chip--meta">deadline: {formatDate(entry.task.deadline)}</span>
+                    ) : null}
+                    {entry.task.reminder_at ? (
+                      <span className="chip chip--meta">reminder: {formatDate(entry.task.reminder_at)}</span>
+                    ) : null}
                   </div>
                 </li>
               ))}

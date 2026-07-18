@@ -1,14 +1,23 @@
 :root {
-  --bg: #f3f5ef;
-  --surface: #fbfcf8;
-  --surface-2: #eef2e6;
-  --ink: #1f2a1f;
-  --ink-muted: #5e6a60;
-  --line: #d8decd;
-  --accent: #2f7a59;
-  --danger: #ad3e3e;
+  /* Tokyo Night (dark) + оранжевый акцент. Один резкий цвет — оранжевый; остальное тихое. */
+  --bg: #16171f;
+  --surface: #1b1d2b; /* shell + панели */
+  --surface-2: #232637; /* приподнятые элементы, кнопки, item */
+  --field: #13141b; /* поля ввода (утоплены) */
+  --ink: #c0caf5;
+  --ink-muted: #9aa5ce;
+  --ink-dim: #6b7394;
+  --line: #2b2f48;
+  --line-strong: #3a3f5e;
+  --accent: #ff9e64; /* Tokyo orange — единственный акцент */
+  --accent-soft: rgba(255, 158, 100, 0.14);
+  --accent-ink: #1a1b26; /* тёмный текст на оранжевом */
+  --ok: #9ece6a; /* done / успех */
+  --blue: #7aa2f7;
+  --purple: #bb9af7;
+  --danger: #f7768e;
   --radius: 16px;
-  --shadow: 0 10px 30px rgba(25, 40, 22, 0.08);
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -17,11 +26,14 @@
 
 body {
   margin: 0;
-  font-family: "Manrope", "Space Grotesk", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
+    "Segoe UI", Roboto, sans-serif;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  accent-color: var(--accent);
   background:
-    radial-gradient(circle at 10% 0%, #dce8d2 0, transparent 40%),
-    radial-gradient(circle at 90% 100%, #ddebe2 0, transparent 45%),
+    radial-gradient(circle at 12% -5%, #23283f 0, transparent 42%),
+    radial-gradient(circle at 90% 105%, #2a2140 0, transparent 46%),
     var(--bg);
 }
 
@@ -53,17 +65,19 @@ body {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--ink-muted);
+  color: var(--ink-dim);
 }
 
 h1 {
   margin: 4px 0 0;
   font-size: clamp(24px, 3vw, 34px);
+  letter-spacing: -0.02em;
 }
 
 h2 {
   margin: 0 0 12px;
   font-size: 18px;
+  letter-spacing: -0.01em;
 }
 
 .panel-head {
@@ -90,6 +104,11 @@ h2 {
   border-radius: 12px;
   padding: 8px 12px;
   cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.ghost:hover:not(:disabled) {
+  border-color: var(--line-strong);
 }
 
 .tabs {
@@ -106,19 +125,25 @@ h2 {
   border-radius: 12px;
   color: var(--ink-muted);
   cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.tab:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
 }
 
 .tab--active {
-  background: var(--surface-2);
+  background: var(--accent-soft);
   color: var(--ink);
-  border-color: #c0ccb7;
+  border-color: var(--accent);
 }
 
 .panel {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 14px;
-  background: #ffffffc9;
+  background: var(--surface);
 }
 
 .onboarding {
@@ -156,7 +181,11 @@ h2 {
 }
 
 .onboarding__checklist li.done {
-  color: var(--accent);
+  color: var(--ink-dim);
+}
+
+.onboarding__checklist li.done .check {
+  color: var(--ok);
 }
 
 .onboarding__done {
@@ -198,13 +227,55 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px;
-  background: var(--surface);
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  background: var(--surface-2);
+  transition: border-color 140ms ease, box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .item:hover {
-  border-color: #c2ccb8;
-  box-shadow: 0 4px 14px rgba(25, 40, 22, 0.06);
+  border-color: rgba(255, 158, 100, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* появление списка: короткий снаппи-каскад (Linear-скорость, Apple-кривая) */
+@keyframes item-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.list .item {
+  animation: item-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.list .item:nth-child(1) {
+  animation-delay: 20ms;
+}
+.list .item:nth-child(2) {
+  animation-delay: 55ms;
+}
+.list .item:nth-child(3) {
+  animation-delay: 90ms;
+}
+.list .item:nth-child(4) {
+  animation-delay: 125ms;
+}
+.list .item:nth-child(5) {
+  animation-delay: 160ms;
+}
+.list .item:nth-child(6) {
+  animation-delay: 195ms;
+}
+.list .item:nth-child(7) {
+  animation-delay: 230ms;
+}
+.list .item:nth-child(n + 8) {
+  animation-delay: 260ms;
 }
 
 .item__main {
@@ -251,8 +322,9 @@ h2 {
 }
 
 .status-btn--active {
-  border-color: #9fb8a6;
-  background: #e6f0e9;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
 }
 
 .task-edit {
@@ -262,7 +334,7 @@ h2 {
   margin-bottom: 8px;
   display: grid;
   gap: 8px;
-  background: #fbfcf8;
+  background: var(--surface);
 }
 
 .task-edit__field {
@@ -295,7 +367,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 2px 8px;
-  background: #f7f9f3;
+  background: var(--surface-2);
 }
 
 .chip--status {
@@ -309,36 +381,43 @@ h2 {
 }
 
 .chip--score {
-  border-color: #b8ccb4;
-  background: #ebf5ea;
-  color: #24563f;
+  border-color: rgba(158, 206, 106, 0.35);
+  background: rgba(158, 206, 106, 0.12);
+  color: var(--ok);
 }
 
+/* статус-бейджи: тонированные пилюли, цвет = смысл */
 .badge {
   color: var(--ink);
+  border-color: transparent;
+  transition: background 160ms ease, color 160ms ease;
 }
 
 .badge--inbox {
-  background: #eef5ff;
+  background: rgba(122, 162, 247, 0.15);
+  color: #9db6ff;
 }
 
 .badge--planned {
-  background: #ecf8f1;
+  background: var(--accent-soft);
+  color: #ffb589;
 }
 
 .badge--done {
-  background: #eff2ef;
+  background: rgba(158, 206, 106, 0.15);
+  color: var(--ok);
 }
 
 .badge--snoozed {
-  background: #f8f3ea;
+  background: rgba(187, 154, 247, 0.14);
+  color: #c7b0f7;
 }
 
 .rank {
   display: inline-block;
   font-size: 12px;
-  color: var(--ink-muted);
-  border: 1px solid var(--line);
+  color: var(--accent);
+  border: 1px solid var(--accent-soft);
   border-radius: 999px;
   padding: 1px 8px;
 }
@@ -364,7 +443,7 @@ h2 {
   border: 1px dashed var(--line);
   border-radius: 12px;
   padding: 12px;
-  background: #fbfcf8;
+  background: var(--surface-2);
 }
 
 .today-empty p {
@@ -372,8 +451,7 @@ h2 {
 }
 
 .today-item {
-  background:
-    linear-gradient(180deg, #ffffff 0%, #fbfcf8 100%);
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
 }
 
 .today-item__main {
@@ -413,7 +491,7 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
-  background: var(--surface);
+  background: var(--surface-2);
 }
 
 .life-card__title {
@@ -426,6 +504,7 @@ h3 {
   margin: 4px 0 0;
   font-size: 20px;
   font-weight: 700;
+  color: var(--accent);
 }
 
 .quick-actions {
@@ -436,11 +515,36 @@ h3 {
 
 .quick-btn {
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--surface-2);
   color: var(--ink);
   border-radius: 10px;
   padding: 8px 10px;
   cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.quick-btn:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+input.quick-btn {
+  background: var(--field);
+}
+
+/* единый оранжевый фокус вместо дефолтного синего */
+input.quick-btn:focus,
+.task-edit__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 158, 100, 0.18);
+}
+
+.quick-btn:focus-visible,
+.ghost:focus-visible,
+.tab:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 158, 100, 0.18);
 }
 
 .create-task {
@@ -483,6 +587,7 @@ h3 {
 .auth-title {
   margin: 6px 0 4px;
   font-size: 24px;
+  letter-spacing: -0.02em;
 }
 
 .auth-subtitle {
@@ -503,7 +608,7 @@ h3 {
 .auth-input {
   width: 100%;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--field);
   color: var(--ink);
   border-radius: 12px;
   padding: 22px 12px 8px;
@@ -515,7 +620,7 @@ h3 {
 .auth-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(47, 122, 89, 0.14);
+  box-shadow: 0 0 0 3px rgba(255, 158, 100, 0.18);
 }
 
 /* плавающий label: лежит как placeholder, уезжает вверх при фокусе/вводе */
@@ -547,7 +652,7 @@ h3 {
   width: 100%;
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   border-radius: 12px;
   padding: 12px;
   font-size: 15px;
@@ -558,7 +663,7 @@ h3 {
 
 .auth-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(47, 122, 89, 0.25);
+  box-shadow: 0 6px 18px rgba(255, 158, 100, 0.3);
 }
 
 .auth-submit:active:not(:disabled) {
@@ -671,7 +776,8 @@ h3 {
   .auth-brand,
   .auth-field,
   .auth-submit,
-  .auth-switch {
+  .auth-switch,
+  .list .item {
     animation: none;
   }
   .auth-input,
